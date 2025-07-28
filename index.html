@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário Interativo - notIFy</title>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 20px; }
+        #addEventBtn { position: fixed; top: 20px; left: 20px; background: #228B22; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; z-index: 1001; }
+        #calendar { max-width: 900px; margin: 80px auto 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1000; width: 300px; }
+        .modal input,
+        .modal textarea { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        .modal button { padding: 8px 12px; background: #228B22; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+        #viewImg { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <button id="addEventBtn">Adicionar Evento</button>
+    <div id="calendar"></div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="modal" id="addModal">
+        <h3 id="addModalTitle">Adicionar Evento</h3>
+        <input type="text" id="eventTitle" placeholder="Título do evento">
+        <label>Início:</label>
+        <input type="datetime-local" id="eventStart">
+        <label>Término:</label>
+        <input type="datetime-local" id="eventEnd">
+        <textarea id="eventDescription" rows="3" placeholder="Descrição"></textarea>
+        <label>Imagem:</label>
+        <input type="file" id="eventImage" accept="image/*">
+        <button id="saveEvent">Salvar</button>
+        <button id="cancelAdd">Cancelar</button>
+    </div>
+
+    <div class="modal" id="viewModal">
+        <h3 id="viewTitle"></h3>
+        <p id="viewDesc"></p>
+        <img id="viewImg" src="" alt="Imagem do evento">
+        <button id="editEvent">Editar</button>
+        <button id="deleteEvent">Excluir</button>
+        <button id="closeView">Fechar</button>
+    </div>
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var overlay = document.getElementById('overlay');
+            var addModal = document.getElementById('addModal');
+            var viewModal = document.getElementById('viewModal');
+            var addTitle = document.getElementById('addModalTitle');
+            var saveBtn = document.getElementById('saveEvent');
+            var cancelAdd = document.getElementById('cancelAdd');
+            var editBtn = document.getElementById('editEvent');
+            var deleteBtn = document.getElementById('deleteEvent');
+            var closeView = document.getElementById('closeView');
+            var eventImageInput = document.getElementById('eventImage');
+            var currentEvent = null;
+            var imageData = null;
+
+            eventImageInput.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(evt) { imageData = evt.target.result; };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            function getEventColor(start, end) {
+                var now = new Date();
+                if (now < new Date(start)) return 'green';
+                if (now >= new Date(start) && now <= new Date(end)) return 'yellow';
+                if (now > new Date(end)) return 'red';
+            }
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+                events: [],
+                eventClick: function(info) {
+                    currentEvent = info.event;
+                    document.getElementById('viewTitle').innerText = info.event.title;
+                    document.getElementById('viewDesc').innerText = info.event.extendedProps.description || 'Sem descrição';
+                    var imgEl = document.getElementById('viewImg');
+                    if (info.event.extendedProps.image) {
+                        imgEl.src = info.event.extendedProps.image;
+                        imgEl.style.display = 'block';
+                    } else {
+                        imgEl.style.display = 'none';
+                    }
+                    overlay.style.display = 'block';
+                    viewModal.style.display = 'block';
+                },
+                eventDidMount: function(info) {
+                    var color = getEventColor(info.event.start, info.event.end);
+                    info.el.style.backgroundColor = color;
+                    info.el.style.borderColor = color;
+                }
+            });
+            calendar.render();
+
+            document.getElementById('addEventBtn').addEventListener('click', function() {
+                currentEvent = null;
+                imageData = null;
+                addTitle.innerText = 'Adicionar Evento';
+                toggleAddModal(true);
+            });
+
+            saveBtn.addEventListener('click', function() {
+                var title = document.getElementById('eventTitle').value;
+                var start = document.getElementById('eventStart').value;
+                var end = document.getElementById('eventEnd').value;
+                var desc = document.getElementById('eventDescription').value;
+                if (title && start && end) {
+                    var eventData = { title: title, start: start, end: end, extendedProps: { description: desc, image: imageData } };
+                    if (currentEvent) {
+                        currentEvent.setProp('title', title);
+                        currentEvent.setStart(start);
+                        currentEvent.setEnd(end);
+                        currentEvent.setExtendedProp('description', desc);
+                        currentEvent.setExtendedProp('image', imageData);
+                    } else {
+                        calendar.addEvent(eventData);
+                    }
+                    closeAllModals();
+                } else alert('Preencha todos os campos!');
+            });
+
+            cancelAdd.addEventListener('click', closeAllModals);
+
+            editBtn.addEventListener('click', function() {
+                if (currentEvent) {
+                    addTitle.innerText = 'Editar Evento';
+                    document.getElementById('eventTitle').value = currentEvent.title;
+                    document.getElementById('eventStart').value = currentEvent.start.toISOString().slice(0,16);
+                    document.getElementById('eventEnd').value = currentEvent.end ? currentEvent.end.toISOString().slice(0,16) : '';
+                    document.getElementById('eventDescription').value = currentEvent.extendedProps.description || '';
+                    imageData = currentEvent.extendedProps.image || null;
+                    eventImageInput.value = '';
+                    viewModal.style.display = 'none';
+                    toggleAddModal(true);
+                }
+            });
+
+            deleteBtn.addEventListener('click', function() {
+                if (currentEvent) { currentEvent.remove(); closeAllModals(); }
+            });
+
+            closeView.addEventListener('click', closeAllModals);
+
+            function toggleAddModal(show) {
+                if (show) { overlay.style.display = 'block'; addModal.style.display = 'block'; }
+                else { addModal.style.display = 'none'; clearAddForm(); overlay.style.display = 'none'; }
+            }
+            function clearAddForm() {
+                document.getElementById('eventTitle').value = '';
+                document.getElementById('eventStart').value = '';
+                document.getElementById('eventEnd').value = '';
+                document.getElementById('eventDescription').value = '';
+                eventImageInput.value = '';
+                imageData = null;
+            }
+            function closeAllModals() {
+                viewModal.style.display = 'none';
+                toggleAddModal(false);
+            }
+        });
+    </script>
+</body>
+</html>
