@@ -1,177 +1,206 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendário Interativo - notIFy</title>
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
-    <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 20px; }
-        #addEventBtn { position: fixed; top: 20px; left: 20px; background: #228B22; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; z-index: 1001; }
-        #calendar { max-width: 900px; margin: 80px auto 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1000; width: 300px; }
-        .modal input,
-        .modal textarea { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        .modal button { padding: 8px 12px; background: #228B22; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
-        #viewImg { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendário Interativo - notIFy</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #loginScreen, #calendarApp { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #f7f7f7; }
+    #loginBox { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); width: 300px; }
+    #loginBox input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+    #loginBox button { width: 100%; padding: 10px; background: #228b22; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    #calendarContainer { position: relative; width: 100%; height: 100%; }
+    #addEventBtn, #logoutBtn { position: fixed; top: 20px; padding: 10px 20px; background: #228b22; color: #fff; border: none; border-radius: 5px; cursor: pointer; z-index: 1001; }
+    #addEventBtn { left: 20px; }
+    #logoutBtn { right: 20px; background: #d9534f; }
+    #calendar { max-width: 900px; margin: 80px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+    .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; }
+    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); z-index: 1001; width: 300px; }
+    .modal label { width: 100%; margin-bottom: 8px; }
+    .modal input, .modal textarea { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+    .modal button { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; background: #228b22; color: #fff; margin-right: 5px; }
+  </style>
 </head>
 <body>
-    <button id="addEventBtn">Adicionar Evento</button>
-    <div id="calendar"></div>
-
-    <div class="overlay" id="overlay"></div>
-
-    <div class="modal" id="addModal">
-        <h3 id="addModalTitle">Adicionar Evento</h3>
-        <input type="text" id="eventTitle" placeholder="Título do evento">
-        <label>Início:</label>
-        <input type="datetime-local" id="eventStart">
-        <label>Término:</label>
-        <input type="datetime-local" id="eventEnd">
-        <textarea id="eventDescription" rows="3" placeholder="Descrição"></textarea>
-        <label>Imagem:</label>
-        <input type="file" id="eventImage" accept="image/*">
-        <button id="saveEvent">Salvar</button>
-        <button id="cancelAdd">Cancelar</button>
+  <!-- Login Screen -->
+  <div id="loginScreen">
+    <div id="loginBox">
+      <h3>Login</h3>
+      <input type="text" id="username" placeholder="Usuário" />
+      <input type="password" id="password" placeholder="Senha" />
+      <button id="loginBtn">Entrar</button>
     </div>
+  </div>
 
-    <div class="modal" id="viewModal">
-        <h3 id="viewTitle"></h3>
-        <p id="viewDesc"></p>
-        <img id="viewImg" src="" alt="Imagem do evento">
-        <button id="editEvent">Editar</button>
-        <button id="deleteEvent">Excluir</button>
-        <button id="closeView">Fechar</button>
+  <!-- Calendar App -->
+  <div id="calendarApp" style="display: none;">
+    <div id="calendarContainer">
+      <button id="addEventBtn">Adicionar Evento</button>
+      <button id="logoutBtn">Sair</button>
+      <div id="calendar"></div>
     </div>
+  </div>
 
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('calendar');
-            var overlay = document.getElementById('overlay');
-            var addModal = document.getElementById('addModal');
-            var viewModal = document.getElementById('viewModal');
-            var addTitle = document.getElementById('addModalTitle');
-            var saveBtn = document.getElementById('saveEvent');
-            var cancelAdd = document.getElementById('cancelAdd');
-            var editBtn = document.getElementById('editEvent');
-            var deleteBtn = document.getElementById('deleteEvent');
-            var closeView = document.getElementById('closeView');
-            var eventImageInput = document.getElementById('eventImage');
-            var currentEvent = null;
-            var imageData = null;
+  <!-- Overlay and Modals -->
+  <div class="overlay" id="overlay"></div>
+  <div class="modal" id="addModal">
+    <h3 id="modalTitle">Adicionar Evento</h3>
+    <label for="eventTitle">Título:</label>
+    <input type="text" id="eventTitle" />
+    <label for="eventStart">Início:</label>
+    <input type="datetime-local" id="eventStart" />
+    <label for="eventEnd">Término:</label>
+    <input type="datetime-local" id="eventEnd" />
+    <label for="eventDescription">Descrição:</label>
+    <textarea id="eventDescription" rows="3"></textarea>
+    <button id="saveEvent">Salvar</button>
+    <button id="cancelAdd">Cancelar</button>
+  </div>
+  <div class="modal" id="viewModal">
+    <h3 id="viewTitle"></h3>
+    <p id="viewDesc"></p>
+    <img id="viewImg" src="" alt="" style="width: 100%; display: none; margin-bottom: 10px;" />
+    <button id="editEvent">Editar</button>
+    <button id="deleteEvent">Excluir</button>
+    <button id="closeView">Fechar</button>
+  </div>
 
-            eventImageInput.addEventListener('change', function(e) {
-                var file = e.target.files[0];
-                if (file) {
-                    var reader = new FileReader();
-                    reader.onload = function(evt) { imageData = evt.target.result; };
-                    reader.readAsDataURL(file);
-                }
-            });
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script>
+    let userRole = 'user';
+    const loginScreen = document.getElementById('loginScreen');
+    const calendarApp = document.getElementById('calendarApp');
+    const addBtn = document.getElementById('addEventBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-            function getEventColor(start, end) {
-                var now = new Date();
-                if (now < new Date(start)) return 'green';
-                if (now >= new Date(start) && now <= new Date(end)) return 'yellow';
-                if (now > new Date(end)) return 'red';
-            }
+    let calendar;
+    let eventsData = JSON.parse(localStorage.getItem('eventsData')) || [];
 
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'pt-br',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-                events: [],
-                eventClick: function(info) {
-                    currentEvent = info.event;
-                    document.getElementById('viewTitle').innerText = info.event.title;
-                    document.getElementById('viewDesc').innerText = info.event.extendedProps.description || 'Sem descrição';
-                    var imgEl = document.getElementById('viewImg');
-                    if (info.event.extendedProps.image) {
-                        imgEl.src = info.event.extendedProps.image;
-                        imgEl.style.display = 'block';
-                    } else {
-                        imgEl.style.display = 'none';
-                    }
-                    overlay.style.display = 'block';
-                    viewModal.style.display = 'block';
-                },
-                eventDidMount: function(info) {
-                    var color = getEventColor(info.event.start, info.event.end);
-                    info.el.style.backgroundColor = color;
-                    info.el.style.borderColor = color;
-                }
-            });
-            calendar.render();
+    loginBtn.addEventListener('click', () => {
+      const uname = document.getElementById('username').value.trim().toLowerCase();
+      userRole = uname === 'organizador' ? 'organizador' : 'user';
+      loginScreen.style.display = 'none';
+      calendarApp.style.display = 'flex';
+      addBtn.style.display = userRole === 'organizador' ? 'block' : 'none';
+      initCalendar();
+    });
 
-            document.getElementById('addEventBtn').addEventListener('click', function() {
-                currentEvent = null;
-                imageData = null;
-                addTitle.innerText = 'Adicionar Evento';
-                toggleAddModal(true);
-            });
+    logoutBtn.addEventListener('click', () => {
+      eventsData = calendar.getEvents().map(e => ({
+        title: e.title,
+        start: e.start,
+        end: e.end,
+        extendedProps: e.extendedProps
+      }));
+      localStorage.setItem('eventsData', JSON.stringify(eventsData));
+      calendar.destroy();
+      calendarApp.style.display = 'none';
+      loginScreen.style.display = 'flex';
+    });
 
-            saveBtn.addEventListener('click', function() {
-                var title = document.getElementById('eventTitle').value;
-                var start = document.getElementById('eventStart').value;
-                var end = document.getElementById('eventEnd').value;
-                var desc = document.getElementById('eventDescription').value;
-                if (title && start && end) {
-                    var eventData = { title: title, start: start, end: end, extendedProps: { description: desc, image: imageData } };
-                    if (currentEvent) {
-                        currentEvent.setProp('title', title);
-                        currentEvent.setStart(start);
-                        currentEvent.setEnd(end);
-                        currentEvent.setExtendedProp('description', desc);
-                        currentEvent.setExtendedProp('image', imageData);
-                    } else {
-                        calendar.addEvent(eventData);
-                    }
-                    closeAllModals();
-                } else alert('Preencha todos os campos!');
-            });
+    function initCalendar() {
+      const overlay = document.getElementById('overlay');
+      const addModal = document.getElementById('addModal');
+      const viewModal = document.getElementById('viewModal');
+      const saveEvent = document.getElementById('saveEvent');
+      const cancelAdd = document.getElementById('cancelAdd');
+      const closeView = document.getElementById('closeView');
+      const editEvent = document.getElementById('editEvent');
+      const deleteEvent = document.getElementById('deleteEvent');
+      let currentEvent = null;
 
-            cancelAdd.addEventListener('click', closeAllModals);
+      function showOverlay() { overlay.style.display = 'block'; }
+      function hideOverlay() { overlay.style.display = 'none'; }
+      function toggleModal(modal, show) { modal.style.display = show ? 'block' : 'none'; }
+      function clearAddForm() {
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventStart').value = '';
+        document.getElementById('eventEnd').value = '';
+        document.getElementById('eventDescription').value = '';
+      }
+      function getEventColor(start, end) {
+        const now = new Date();
+        if (now < new Date(start)) return 'green';
+        if (now <= new Date(end)) return 'yellow';
+        return 'red';
+      }
 
-            editBtn.addEventListener('click', function() {
-                if (currentEvent) {
-                    addTitle.innerText = 'Editar Evento';
-                    document.getElementById('eventTitle').value = currentEvent.title;
-                    document.getElementById('eventStart').value = currentEvent.start.toISOString().slice(0,16);
-                    document.getElementById('eventEnd').value = currentEvent.end ? currentEvent.end.toISOString().slice(0,16) : '';
-                    document.getElementById('eventDescription').value = currentEvent.extendedProps.description || '';
-                    imageData = currentEvent.extendedProps.image || null;
-                    eventImageInput.value = '';
-                    viewModal.style.display = 'none';
-                    toggleAddModal(true);
-                }
-            });
+      calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+        events: eventsData,
+        eventClick: info => {
+          currentEvent = info.event;
+          document.getElementById('viewTitle').innerText = info.event.title;
+          document.getElementById('viewDesc').innerText = info.event.extendedProps.description || '';
+          const imgEl = document.getElementById('viewImg');
+          imgEl.style.display = info.event.extendedProps.image ? 'block' : 'none';
+          if (info.event.extendedProps.image) imgEl.src = info.event.extendedProps.image;
+          editEvent.style.display = userRole === 'organizador' ? 'inline-block' : 'none';
+          deleteEvent.style.display = userRole === 'organizador' ? 'inline-block' : 'none';
+          showOverlay();
+          toggleModal(viewModal, true);
+        },
+        eventDidMount: info => {
+          const color = getEventColor(info.event.start, info.event.end);
+          info.el.style.backgroundColor = color;
+          info.el.style.borderColor = color;
+        }
+      });
+      calendar.render();
 
-            deleteBtn.addEventListener('click', function() {
-                if (currentEvent) { currentEvent.remove(); closeAllModals(); }
-            });
+      addBtn.addEventListener('click', () => {
+        currentEvent = null;
+        clearAddForm();
+        document.getElementById('modalTitle').innerText = 'Adicionar Evento';
+        showOverlay();
+        toggleModal(addModal, true);
+      });
 
-            closeView.addEventListener('click', closeAllModals);
+      saveEvent.addEventListener('click', () => {
+        const t = document.getElementById('eventTitle').value;
+        const s = document.getElementById('eventStart').value;
+        const e = document.getElementById('eventEnd').value;
+        const d = document.getElementById('eventDescription').value;
+        if (!t || !s || !e) return alert('Preencha todos os campos!');
+        const ev = { title: t, start: s, end: e, extendedProps: { description: d, image: null } };
+        if (currentEvent) {
+          currentEvent.setProp('title', t);
+          currentEvent.setStart(s);
+          currentEvent.setEnd(e);
+          currentEvent.setExtendedProp('description', d);
+        } else {
+          calendar.addEvent(ev);
+        }
+        toggleModal(addModal, false);
+        hideOverlay();
+      });
 
-            function toggleAddModal(show) {
-                if (show) { overlay.style.display = 'block'; addModal.style.display = 'block'; }
-                else { addModal.style.display = 'none'; clearAddForm(); overlay.style.display = 'none'; }
-            }
-            function clearAddForm() {
-                document.getElementById('eventTitle').value = '';
-                document.getElementById('eventStart').value = '';
-                document.getElementById('eventEnd').value = '';
-                document.getElementById('eventDescription').value = '';
-                eventImageInput.value = '';
-                imageData = null;
-            }
-            function closeAllModals() {
-                viewModal.style.display = 'none';
-                toggleAddModal(false);
-            }
-        });
-    </script>
+      cancelAdd.addEventListener('click', () => { toggleModal(addModal, false); hideOverlay(); });
+      closeView.addEventListener('click', () => { toggleModal(viewModal, false); hideOverlay(); });
+
+      editEvent.addEventListener('click', () => {
+        if (!currentEvent) return;
+        document.getElementById('modalTitle').innerText = 'Editar Evento';
+        document.getElementById('eventTitle').value = currentEvent.title;
+        document.getElementById('eventStart').value = currentEvent.start.toISOString().slice(0, 16);
+        document.getElementById('eventEnd').value = currentEvent.end.toISOString().slice(0, 16);
+        document.getElementById('eventDescription').value = currentEvent.extendedProps.description || '';
+        toggleModal(viewModal, false);
+        showOverlay();
+        toggleModal(addModal, true);
+      });
+
+      deleteEvent.addEventListener('click', () => {
+        if (currentEvent) currentEvent.remove();
+        toggleModal(viewModal, false);
+        hideOverlay();
+      });
+    }
+  </script>
 </body>
 </html>
