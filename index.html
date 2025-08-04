@@ -7,20 +7,20 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; }
-    #loginScreen, #calendarApp { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #f7f7f7; }
-    #loginBox { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); width: 300px; }
-    #loginBox input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-    #loginBox button { width: 100%; padding: 10px; background: #228b22; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-    #calendarContainer { position: relative; width: 100%; height: 100%; }
-    #addEventBtn, #logoutBtn { position: fixed; top: 20px; padding: 10px 20px; background: #228b22; color: #fff; border: none; border-radius: 5px; cursor: pointer; z-index: 1001; }
-    #addEventBtn { left: 20px; }
-    #logoutBtn { right: 20px; background: #d9534f; }
-    #calendar { max-width: 900px; margin: 80px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
-    .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; }
-    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); z-index: 1001; width: 300px; }
-    .modal label { width: 100%; margin-bottom: 8px; }
-    .modal input, .modal textarea { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-    .modal button { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; background: #228b22; color: #fff; margin-right: 5px; }
+    #loginScreen, #calendarApp { width:100vw; height:100vh; display:flex; justify-content:center; align-items:center; background:#f7f7f7; }
+    #loginBox { background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); width:300px; }
+    #loginBox input,#loginBox button { width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
+    #loginBox button { background:#228b22; color:#fff; border:none; cursor:pointer; }
+    #calendarContainer { position:relative; width:100%; height:100%; }
+    #addEventBtn,#logoutBtn { position:fixed; top:20px; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:#fff; z-index:1001; }
+    #addEventBtn { left:20px; background:#228b22; }
+    #logoutBtn { right:20px; background:#d9534f; }
+    #calendar { max-width:900px; margin:80px auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+    .overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; }
+    .modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:1001; width:300px; }
+    .modal label { display:block; margin-bottom:5px; }
+    .modal input, .modal textarea { width:100%; margin-bottom:10px; padding:8px; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
+    .modal button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; background:#228b22; color:#fff; margin-right:5px; }
   </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
   </div>
 
   <!-- Calendar App -->
-  <div id="calendarApp" style="display: none;">
+  <div id="calendarApp" style="display:none;">
     <div id="calendarContainer">
       <button id="addEventBtn">Adicionar Evento</button>
       <button id="logoutBtn">Sair</button>
@@ -55,13 +55,15 @@
     <input type="datetime-local" id="eventEnd" />
     <label for="eventDescription">Descrição:</label>
     <textarea id="eventDescription" rows="3"></textarea>
+    <label for="eventImage">Imagem:</label>
+    <input type="file" id="eventImage" accept="image/*" />
     <button id="saveEvent">Salvar</button>
     <button id="cancelAdd">Cancelar</button>
   </div>
   <div class="modal" id="viewModal">
     <h3 id="viewTitle"></h3>
     <p id="viewDesc"></p>
-    <img id="viewImg" src="" alt="" style="width: 100%; display: none; margin-bottom: 10px;" />
+    <img id="viewImg" src="" alt="Imagem do evento" style="width:100%;display:none;margin-bottom:10px;" />
     <button id="editEvent">Editar</button>
     <button id="deleteEvent">Excluir</button>
     <button id="closeView">Fechar</button>
@@ -77,31 +79,39 @@
     const logoutBtn = document.getElementById('logoutBtn');
 
     let calendar;
-    let eventsData = JSON.parse(localStorage.getItem('eventsData')) || [];
+    let imageData = null;
+
+    function persistEvents() {
+      const evs = calendar.getEvents().map(e => ({
+        title: e.title,
+        start: e.start.toISOString(),
+        end: e.end.toISOString(),
+        extendedProps: e.extendedProps
+      }));
+      localStorage.setItem('eventsData', JSON.stringify(evs));
+    }
 
     loginBtn.addEventListener('click', () => {
       const uname = document.getElementById('username').value.trim().toLowerCase();
       userRole = uname === 'organizador' ? 'organizador' : 'user';
       loginScreen.style.display = 'none';
       calendarApp.style.display = 'flex';
-      addBtn.style.display = userRole === 'organizador' ? 'block' : 'none';
-      initCalendar();
+      addBtn.style.display = userRole === 'organizador' ? 'inline-block' : 'none';
+      if (!calendar) initCalendar();
     });
 
     logoutBtn.addEventListener('click', () => {
-      eventsData = calendar.getEvents().map(e => ({
-        title: e.title,
-        start: e.start,
-        end: e.end,
-        extendedProps: e.extendedProps
-      }));
-      localStorage.setItem('eventsData', JSON.stringify(eventsData));
+      persistEvents();
       calendar.destroy();
-      calendarApp.style.display = 'none';
+      calendar = null;
       loginScreen.style.display = 'flex';
+      calendarApp.style.display = 'none';
     });
 
     function initCalendar() {
+      // Always load the latest events from storage
+      const eventsData = JSON.parse(localStorage.getItem('eventsData')) || [];
+
       const overlay = document.getElementById('overlay');
       const addModal = document.getElementById('addModal');
       const viewModal = document.getElementById('viewModal');
@@ -110,16 +120,29 @@
       const closeView = document.getElementById('closeView');
       const editEvent = document.getElementById('editEvent');
       const deleteEvent = document.getElementById('deleteEvent');
+      const eventImageInput = document.getElementById('eventImage');
       let currentEvent = null;
+
+      // Image upload handling
+      eventImageInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = evt => { imageData = evt.target.result; };
+          reader.readAsDataURL(file);
+        }
+      });
 
       function showOverlay() { overlay.style.display = 'block'; }
       function hideOverlay() { overlay.style.display = 'none'; }
       function toggleModal(modal, show) { modal.style.display = show ? 'block' : 'none'; }
-      function clearAddForm() {
+      function clearForm() {
         document.getElementById('eventTitle').value = '';
         document.getElementById('eventStart').value = '';
         document.getElementById('eventEnd').value = '';
         document.getElementById('eventDescription').value = '';
+        eventImageInput.value = '';
+        imageData = null;
       }
       function getEventColor(start, end) {
         const now = new Date();
@@ -131,17 +154,28 @@
       calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         initialView: 'dayGridMonth',
         locale: 'pt-br',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-        events: eventsData,
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: eventsData.map(ev => ({
+          title: ev.title,
+          start: ev.start,
+          end: ev.end,
+          extendedProps: ev.extendedProps
+        })),
         eventClick: info => {
           currentEvent = info.event;
           document.getElementById('viewTitle').innerText = info.event.title;
           document.getElementById('viewDesc').innerText = info.event.extendedProps.description || '';
           const imgEl = document.getElementById('viewImg');
-          imgEl.style.display = info.event.extendedProps.image ? 'block' : 'none';
-          if (info.event.extendedProps.image) imgEl.src = info.event.extendedProps.image;
-          editEvent.style.display = userRole === 'organizador' ? 'inline-block' : 'none';
-          deleteEvent.style.display = userRole === 'organizador' ? 'inline-block' : 'none';
+          if (info.event.extendedProps.image) {
+            imgEl.src = info.event.extendedProps.image;
+            imgEl.style.display = 'block';
+          } else imgEl.style.display = 'none';
+          document.getElementById('editEvent').style.display = userRole === 'organizador' ? 'inline-block' : 'none';
+          document.getElementById('deleteEvent').style.display = userRole === 'organizador' ? 'inline-block' : 'none';
           showOverlay();
           toggleModal(viewModal, true);
         },
@@ -151,31 +185,34 @@
           info.el.style.borderColor = color;
         }
       });
+
       calendar.render();
 
       addBtn.addEventListener('click', () => {
         currentEvent = null;
-        clearAddForm();
+        clearForm();
         document.getElementById('modalTitle').innerText = 'Adicionar Evento';
         showOverlay();
         toggleModal(addModal, true);
       });
 
       saveEvent.addEventListener('click', () => {
-        const t = document.getElementById('eventTitle').value;
-        const s = document.getElementById('eventStart').value;
-        const e = document.getElementById('eventEnd').value;
-        const d = document.getElementById('eventDescription').value;
-        if (!t || !s || !e) return alert('Preencha todos os campos!');
-        const ev = { title: t, start: s, end: e, extendedProps: { description: d, image: null } };
+        const title = document.getElementById('eventTitle').value;
+        const start = document.getElementById('eventStart').value;
+        const end = document.getElementById('eventEnd').value;
+        const desc = document.getElementById('eventDescription').value;
+        if (!title || !start || !end) return alert('Preencha todos os campos!');
+        const evData = { title, start, end, extendedProps: { description: desc, image: imageData } };
         if (currentEvent) {
-          currentEvent.setProp('title', t);
-          currentEvent.setStart(s);
-          currentEvent.setEnd(e);
-          currentEvent.setExtendedProp('description', d);
+          currentEvent.setProp('title', title);
+          currentEvent.setStart(start);
+          currentEvent.setEnd(end);
+          currentEvent.setExtendedProp('description', desc);
+          currentEvent.setExtendedProp('image', imageData);
         } else {
-          calendar.addEvent(ev);
+          calendar.addEvent(evData);
         }
+        persistEvents();
         toggleModal(addModal, false);
         hideOverlay();
       });
@@ -183,20 +220,22 @@
       cancelAdd.addEventListener('click', () => { toggleModal(addModal, false); hideOverlay(); });
       closeView.addEventListener('click', () => { toggleModal(viewModal, false); hideOverlay(); });
 
-      editEvent.addEventListener('click', () => {
+      document.getElementById('editEvent').addEventListener('click', () => {
         if (!currentEvent) return;
         document.getElementById('modalTitle').innerText = 'Editar Evento';
         document.getElementById('eventTitle').value = currentEvent.title;
-        document.getElementById('eventStart').value = currentEvent.start.toISOString().slice(0, 16);
-        document.getElementById('eventEnd').value = currentEvent.end.toISOString().slice(0, 16);
+        document.getElementById('eventStart').value = currentEvent.start.toISOString().slice(0,16);
+        document.getElementById('eventEnd').value = currentEvent.end.toISOString().slice(0,16);
         document.getElementById('eventDescription').value = currentEvent.extendedProps.description || '';
+        imageData = currentEvent.extendedProps.image || null;
         toggleModal(viewModal, false);
         showOverlay();
         toggleModal(addModal, true);
       });
 
-      deleteEvent.addEventListener('click', () => {
+      document.getElementById('deleteEvent').addEventListener('click', () => {
         if (currentEvent) currentEvent.remove();
+        persistEvents();
         toggleModal(viewModal, false);
         hideOverlay();
       });
