@@ -1,0 +1,62 @@
+<!-- html5-qrcode.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.7/html5-qrcode.min.js"></script>
+<script>
+let html5QrCode = null;
+let cameraRunning = false;
+
+document.addEventListener('DOMContentLoaded', function () {
+
+
+
+document.getElementById('start-camera-btn').addEventListener('click', function () { //botao
+  if (cameraRunning) return;
+  const readerElem = document.getElementById('reader'); //div
+  readerElem.style.display = 'block';
+  html5QrCode = new Html5Qrcode("reader");
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      const cameraId = devices[0].id;
+      html5QrCode.start(
+        cameraId,
+        {
+          fps: 25,
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1.0,
+          disableFlip: true
+        },
+        qrCodeMessage => {
+          // Preenche campo e adiciona from_qr=1
+          document.getElementById('id_hash_presenca').value = qrCodeMessage;//ter um hash (campo de texto)
+          // Garante campo from_qr
+          let fromQrInput = document.querySelector('input[name="from_qr"]'); //entrar com um valor numerico
+          if (!fromQrInput) {
+            fromQrInput = document.createElement('input');
+            fromQrInput.type = 'hidden';
+            fromQrInput.name = 'from_qr';
+            document.querySelector('form').appendChild(fromQrInput);
+          }
+          fromQrInput.value = '1';
+          // Para câmera e submete
+          html5QrCode.stop().then(() => {
+            cameraRunning = false;
+            document.getElementById('reader').style.display = 'none';
+            document.querySelector('form').submit();
+          }).catch(err => {
+            console.error('Erro ao parar câmera:', err);
+          });
+        },
+        errorMessage => {
+          // erros ignorados
+        }
+      ).then(() => {
+        cameraRunning = true;
+      }).catch(err => {
+        console.error('Erro ao iniciar câmera:', err);
+      });
+    }
+  }).catch(err => {
+    console.error('Erro ao obter câmeras:', err);
+  });
+});
+});
+</script>

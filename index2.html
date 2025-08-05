@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Leitor de QR Code</h1>
+  <button id="start-btn">📷 Abrir Câmera</button>
+  <button id="switch-btn" disabled>🔄 Trocar Câmera</button>
+  <div id="reader"></div>
+  <div id="result"></div>
+
+  <script>
+    const startBtn = document.getElementById("start-btn");
+    const switchBtn = document.getElementById("switch-btn");
+    const readerElem = document.getElementById("reader");
+    const resultElem = document.getElementById("result");
+
+    const html5QrCode = new Html5Qrcode("reader");
+    let cameras = [];
+    let currentCameraIndex = 0;
+    let scanning = false;
+
+    startBtn.onclick = async () => {
+      if (scanning) return;
+
+      try {
+        cameras = await Html5Qrcode.getCameras();
+        if (cameras.length === 0) {
+          alert("Nenhuma câmera encontrada.");
+          return;
+        }
+
+        startScan(cameras[currentCameraIndex]);
+        switchBtn.disabled = cameras.length < 2;
+      } catch (err) {
+        console.error("Erro ao acessar câmeras:", err);
+        alert("Erro ao acessar câmeras. Dê permissão no navegador.");
+      }
+    };
+
+    switchBtn.onclick = async () => {
+      if (!scanning || cameras.length < 2) return;
+      await html5QrCode.stop();
+      currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+      startScan(cameras[currentCameraIndex]);
+    };
+
+    function startScan(camera) {
+      html5QrCode.start(
+        camera.id,
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+          resultElem.innerText = "QR Code: " + qrCodeMessage;
+          html5QrCode.stop();
+          scanning = false;
+          switchBtn.disabled = true;
+        },
+        errorMessage => {
+          // erros silenciosos
+        }
+      ).then(() => {
+        scanning = true;
+      }).catch(err => {
+        console.error("Erro ao iniciar câmera:", err);
+      });
+    }
+  </script>
+</body>
+</html>
