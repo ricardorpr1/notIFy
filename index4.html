@@ -1,179 +1,184 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Notify - Leitor QR Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Notify - Leitor QR Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Lib Scanner -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.7/html5-qrcode.min.js"></script>
+    <!-- Lib Scanner -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.7/html5-qrcode.min.js"></script>
 
-  <!-- Estilos -->
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Arial', sans-serif;
-      background-color: #fefefe;
-      color: #2c3e50;
-      text-align: center;
-    }
+    <!-- Estilos -->
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #fefefe;
+            color: #2c3e50;
+            text-align: center;
+        }
 
-    header {
-      background-color: #2e5c44;
-      padding: 20px 0;
-    }
+        header {
+            background-color: #2e5c44;
+            padding: 20px 0;
+        }
 
-    header h1 {
-      color: white;
-      font-size: 28px;
-      font-weight: 600;
-      margin: 0;
-    }
+        header h1 {
+            color: white;
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
 
-    .brand {
-      font-weight: bold;
-      font-size: 24px;
-    }
+        .brand {
+            font-weight: bold;
+            font-size: 24px;
+        }
 
-    .brand .i {
-      color: #c0392b;
-    }
+        .brand .i {
+            color: #c0392b;
+        }
 
-    .container {
-      padding: 30px 20px;
-    }
+        .container {
+            padding: 30px 20px;
+        }
 
-    #reader {
-      width: 100%;
-      max-width: 320px;
-      margin: 20px auto;
-      display: none;
-    }
+        #reader {
+            width: 100%;
+            max-width: 320px;
+            margin: 20px auto;
+            display: none;
+        }
 
-    .btn {
-      background-color: #2e5c44;
-      color: white;
-      border: none;
-      padding: 14px 28px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin: 10px auto;
-      display: block;
-      width: 200px;
-    }
+        .btn {
+            background-color: #2e5c44;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px auto;
+            display: block;
+            width: 200px;
+        }
 
-    .btn:hover {
-      background-color: #244a38;
-    }
+        .btn:hover {
+            background-color: #244a38;
+        }
 
-    .switch-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+        .switch-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            padding: 0;
+        }
 
-    .switch-btn img {
-      width: 32px;
-      height: 32px;
-    }
+        .switch-btn img {
+            width: 36px;
+            height: 36px;
+            filter: invert(25%) sepia(11%) saturate(1000%) hue-rotate(80deg);
+        }
 
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
 
-    h2 {
-      font-size: 22px;
-      color: #2e5c44;
-    }
-  </style>
+        h2 {
+            font-size: 22px;
+            color: #2e5c44;
+        }
+    </style>
 </head>
+
 <body>
 
-  <!-- Cabeçalho -->
-  <header>
-    <div class="brand">not<span class="i">iFy</span></div>
-  </header>
+    <!-- Cabeçalho -->
+    <header>
+        <div class="brand">not<span class="i">iFy</span></div>
+    </header>
 
-  <!-- Conteúdo -->
-  <div class="container">
-    <h2>Ler QR Code</h2>
+    <!-- Conteúdo -->
+    <div class="container">
+        <h2>Ler QR Code</h2>
 
-    <!-- Botão Escanear -->
-    <button id="start-camera-btn" class="btn">Escanear</button>
+        <!-- Botão Escanear -->
+        <button id="start-camera-btn" class="btn">Escanear</button>
 
-    <!-- Botão Trocar Câmera -->
-    <button id="switch-btn" class="switch-btn" disabled>
-      <img src="https://cdn-icons-png.flaticon.com/512/126/126472.png" alt="Trocar câmera">
-    </button>
+        <!-- Botão Trocar Câmera -->
+        <button id="switch-btn" class="switch-btn" disabled>
+            <img src="trocarcamera.png"="Trocar câmera">
+        </button>
 
-    <!-- Scanner -->
-    <div id="reader"></div>
+        <!-- Scanner -->
+        <div id="reader"></div>
 
-    <!-- Resultado -->
-    <div id="result"></div>
-  </div>
+        <!-- Resultado -->
+        <div id="result"></div>
+    </div>
 
-  <!-- Script Scanner -->
-  <script>
-    const startBtn = document.getElementById("start-camera-btn");
-    const switchBtn = document.getElementById("switch-btn");
-    const readerElem = document.getElementById("reader");
-    const resultElem = document.getElementById("result");
+    <!-- Script Scanner -->
+    <script>
+        const startBtn = document.getElementById("start-camera-btn");
+        const switchBtn = document.getElementById("switch-btn");
+        const readerElem = document.getElementById("reader");
+        const resultElem = document.getElementById("result");
 
-    const html5QrCode = new Html5Qrcode("reader");
-    let cameras = [];
-    let currentCameraIndex = 0;
-    let scanning = false;
+        const html5QrCode = new Html5Qrcode("reader");
+        let cameras = [];
+        let currentCameraIndex = 0;
+        let scanning = false;
 
-    startBtn.onclick = async () => {
-      if (scanning) return;
+        startBtn.onclick = async () => {
+            if (scanning) return;
 
-      try {
-        cameras = await Html5Qrcode.getCameras();
-        if (cameras.length === 0) {
-          alert("Nenhuma câmera encontrada.");
-          return;
+            try {
+                cameras = await Html5Qrcode.getCameras();
+                if (cameras.length === 0) {
+                    alert("Nenhuma câmera encontrada.");
+                    return;
+                }
+
+                startScan(cameras[currentCameraIndex]);
+                switchBtn.disabled = cameras.length < 2;
+            } catch (err) {
+                console.error("Erro ao acessar câmeras:", err);
+                alert("Erro ao acessar câmeras. Dê permissão no navegador.");
+            }
+        };
+
+        switchBtn.onclick = async () => {
+            if (!scanning || cameras.length < 2) return;
+            await html5QrCode.stop();
+            currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+            startScan(cameras[currentCameraIndex]);
+        };
+
+        function startScan(camera) {
+            readerElem.style.display = 'block';
+            html5QrCode.start(
+                camera.id,
+                { fps: 10, qrbox: 250 },
+                qrCodeMessage => {
+                    resultElem.innerText = "QR Code: " + qrCodeMessage;
+                    html5QrCode.stop();
+                    scanning = false;
+                    switchBtn.disabled = true;
+                    readerElem.style.display = 'none';
+                },
+                errorMessage => {
+                    // Erros ignorados
+                }
+            ).then(() => {
+                scanning = true;
+            }).catch(err => {
+                console.error("Erro ao iniciar câmera:", err);
+            });
         }
-
-        startScan(cameras[currentCameraIndex]);
-        switchBtn.disabled = cameras.length < 2;
-      } catch (err) {
-        console.error("Erro ao acessar câmeras:", err);
-        alert("Erro ao acessar câmeras. Dê permissão no navegador.");
-      }
-    };
-
-    switchBtn.onclick = async () => {
-      if (!scanning || cameras.length < 2) return;
-      await html5QrCode.stop();
-      currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-      startScan(cameras[currentCameraIndex]);
-    };
-
-    function startScan(camera) {
-      readerElem.style.display = 'block';
-      html5QrCode.start(
-        camera.id,
-        { fps: 10, qrbox: 250 },
-        qrCodeMessage => {
-          resultElem.innerText = "QR Code: " + qrCodeMessage;
-          html5QrCode.stop();
-          scanning = false;
-          switchBtn.disabled = true;
-          readerElem.style.display = 'none';
-        },
-        errorMessage => {
-          // Erros ignorados
-        }
-      ).then(() => {
-        scanning = true;
-      }).catch(err => {
-        console.error("Erro ao iniciar câmera:", err);
-      });
-    }
-  </script>
+    </script>
 </body>
+
 </html>
