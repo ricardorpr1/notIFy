@@ -183,11 +183,11 @@
 
         // Inserção manual
         manualBtn.onclick = () => {
-            const input = prompt("Digite os 9 dígitos:");
+            const input = prompt("Digite os 9 dígitos do seu CPF:");
             if (input && /^\d{9}$/.test(input)) {
                 resultElem.innerText = "Código digitado: " + input;
             } else if (input) {
-                alert("Por favor, insira exatamente 9 dígitos numéricos.");
+                alert("Insira apenas 9 dígitos numéricos.");
             }
         };
 
