@@ -76,7 +76,8 @@
             padding: 0;
         }
 
-        .switch-btn img {
+        .switch-btn img,
+        .switch-btn span {
             width: 36px;
             height: 36px;
             filter: invert(25%) sepia(11%) saturate(1000%) hue-rotate(80deg);
@@ -90,6 +91,18 @@
         h2 {
             font-size: 22px;
             color: #2e5c44;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .switch-btn span {
+            font-size: 32px;
+            display: inline-block;
+            line-height: 1;
         }
     </style>
 </head>
@@ -108,10 +121,18 @@
         <!-- Botão Escanear -->
         <button id="start-camera-btn" class="btn">Escanear</button>
 
-        <!-- Botão Trocar Câmera -->
-        <button id="switch-btn" class="switch-btn" disabled>
-            <img src="trocarcamera.png"="Trocar câmera">
-        </button>
+        <!-- Grupo de Botões Secundários -->
+        <div class="btn-group">
+            <!-- Botão Trocar Câmera -->
+            <button id="switch-btn" class="switch-btn" title="Trocar câmera" disabled>
+                <img src="trocarcamera.png" alt="Trocar câmera">
+            </button>
+
+            <!-- Botão Inserir Manualmente -->
+            <button id="manual-input-btn" class="switch-btn" title="Inserir manualmente">
+                <span>⌨️</span>
+            </button>
+        </div>
 
         <!-- Scanner -->
         <div id="reader"></div>
@@ -124,6 +145,7 @@
     <script>
         const startBtn = document.getElementById("start-camera-btn");
         const switchBtn = document.getElementById("switch-btn");
+        const manualBtn = document.getElementById("manual-input-btn");
         const readerElem = document.getElementById("reader");
         const resultElem = document.getElementById("result");
 
@@ -132,6 +154,7 @@
         let currentCameraIndex = 0;
         let scanning = false;
 
+        // Iniciar scanner
         startBtn.onclick = async () => {
             if (scanning) return;
 
@@ -150,6 +173,7 @@
             }
         };
 
+        // Trocar câmera
         switchBtn.onclick = async () => {
             if (!scanning || cameras.length < 2) return;
             await html5QrCode.stop();
@@ -157,6 +181,17 @@
             startScan(cameras[currentCameraIndex]);
         };
 
+        // Inserção manual
+        manualBtn.onclick = () => {
+            const input = prompt("Digite os 9 dígitos:");
+            if (input && /^\d{9}$/.test(input)) {
+                resultElem.innerText = "Código digitado: " + input;
+            } else if (input) {
+                alert("Por favor, insira exatamente 9 dígitos numéricos.");
+            }
+        };
+
+        // Função de escaneamento
         function startScan(camera) {
             readerElem.style.display = 'block';
             html5QrCode.start(
