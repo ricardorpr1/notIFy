@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cartão do Aluno</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .card header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card header img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-right: 20px;
+      object-fit: cover;
+    }
+
+    .card header h1 {
+      font-size: 28px;
+    }
+
+    .info {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .info p {
+      width: 45%;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .info strong {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    button {
+      background-color: #009688;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #00796b;
+    }
+
+    .qrcodeContent {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .qrcodeContent img {
+      width: 150px;
+      height: 150px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <img src="https://img.freepik.com/fotos-gratis/jovem-barbudo-com-camisa-listrada_273609-5677.jpg?semt=ais_hybrid&w=740" alt="Foto do aluno">
+      <h1>Rodrigo Batista</h1>
+    </header>
+
+    <div class="info">
+      <p><strong>Nome</strong>Rodrigo Batista</p>
+      <p><strong>Telefone</strong>(31) 98765-4321</p>
+      <p><strong>E-mail</strong>fulano@email.com</p>
+      <p><strong>E-mail</strong>fulano@email.com</p>
+      <p><strong>CPF</strong><span id="cpf">123.456.789-10</span></p>
+      <p><strong>Registro Acadêmico</strong>1234567</p>
+      <p><strong>Data de Nascimento</strong>09/08/2007</p>
+    </div>
+
+    <button id="generateBtn">GERAR QR CODE</button>
+
+    <div class="qrcodeContent">
+      <img id="qrcode" src="" alt="QR Code">
+    </div>
+  </div>
+
+  <script>
+    const qrcode = document.querySelector("#qrcode");
+    const cpfSpan = document.querySelector("#cpf");
+    const button = document.querySelector("#generateBtn");
+
+    button.addEventListener("click", genQRCode);
+
+    function genQRCode() {
+      const cpf = cpfSpan.textContent;
+      const cleanedCPF = cpf.replace(/[.-]/g, "");
+      const cpfNineDigits = cleanedCPF.slice(0, 9);
+      qrcode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${cpfNineDigits}`;
+    }
+  </script>
+</body>
+</html>
