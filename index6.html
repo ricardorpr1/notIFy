@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <title>Festa Junina</title>
@@ -12,14 +13,19 @@
       align-items: center;
       height: 100vh;
     }
+
     .card {
       background: white;
       padding: 20px;
       border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       width: 350px;
     }
-    .hidden { display: none; }
+
+    .hidden {
+      display: none;
+    }
+
     .btn {
       display: block;
       width: 100%;
@@ -32,7 +38,11 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    .btn:hover { background: #166534; }
+
+    .btn:hover {
+      background: #166534;
+    }
+
     .stars {
       display: flex;
       justify-content: center;
@@ -40,13 +50,16 @@
       font-size: 28px;
       cursor: pointer;
     }
+
     .star {
       color: #d1d5db;
     }
+
     .star.active,
     .star.hover {
       color: #facc15;
     }
+
     textarea {
       width: 100%;
       height: 80px;
@@ -58,6 +71,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="card" id="evento">
     <h2>Festa Junina</h2>
@@ -131,8 +145,9 @@
     function enviar() {
       const comentario = document.getElementById('comentario').value;
       alert(`Avaliação enviada! Nota: ${nota}, Comentário: ${comentario}`);
-      location.reload();
+      location.href = "index.html";
     }
   </script>
 </body>
+
 </html>
