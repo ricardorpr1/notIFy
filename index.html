@@ -12,16 +12,13 @@
     #loginBox input,#loginBox button { width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
     #loginBox button { background:#228b22; color:#fff; border:none; cursor:pointer; }
     #calendarContainer { position:relative; width:100%; height:100%; }
-<<<<<<< HEAD
     #addEventBtn,#logoutBtn,#inscriptionsBtn,#userCardBtn { position:fixed; top:20px; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:#fff; z-index:1001; }
     #addEventBtn { left:20px; background:#228b22; }
     #inscriptionsBtn { left:150px; background:#007bff; }
     #userCardBtn { left:320px; background:#ff9800; }
-=======
     #addEventBtn,#logoutBtn,#inscriptionsBtn { position:fixed; top:20px; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:#fff; z-index:1001; }
     #addEventBtn { left:20px; background:#228b22; }
     #inscriptionsBtn { left:150px; background:#007bff; }
->>>>>>> 0dc76eabac2aa35c970954b901d9459191331edd
     #logoutBtn { right:20px; background:#d9534f; }
     #calendar { max-width:900px; margin:80px auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
     .overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; }
@@ -49,10 +46,7 @@
     <div id="calendarContainer">
       <button id="addEventBtn">Adicionar Evento</button>
       <button id="inscriptionsBtn">Minhas Inscrições</button>
-<<<<<<< HEAD
       <button id="userCardBtn">Cartão do Usuário</button>
-=======
->>>>>>> 0dc76eabac2aa35c970954b901d9459191331edd
       <button id="logoutBtn">Sair</button>
       <div id="calendar"></div>
     </div>
@@ -94,10 +88,7 @@
     const inscriptionsApp=document.getElementById('inscriptionsApp');
     const addBtn=document.getElementById('addEventBtn');
     const inscBtn=document.getElementById('inscriptionsBtn');
-<<<<<<< HEAD
     const userCardBtn=document.getElementById('userCardBtn');
-=======
->>>>>>> 0dc76eabac2aa35c970954b901d9459191331edd
     const loginBtn=document.getElementById('loginBtn');
     const logoutBtn=document.getElementById('logoutBtn');
     const backBtn=document.getElementById('backToCalendar');
@@ -111,15 +102,11 @@
       const uname=document.getElementById('username').value.trim().toLowerCase();
       userRole=(uname==='organizador'?'organizador':'user');
       inscBtn.style.display = (userRole==='user'?'inline-block':'none');
-<<<<<<< HEAD
       userCardBtn.style.display = (userRole==='user'?'inline-block':'none');
-=======
->>>>>>> 0dc76eabac2aa35c970954b901d9459191331edd
       loginScreen.style.display='none';calendarApp.style.display='flex';
       addBtn.style.display=(userRole==='organizador'?'inline-block':'none');
       initCalendar();
     });
-<<<<<<< HEAD
     userCardBtn.addEventListener('click',()=>{
       window.location.href='index5.html';
     });
@@ -134,19 +121,6 @@
         list.appendChild(div);
       });
     });
-=======
-    logoutBtn.addEventListener('click',()=>{eventsData=calendar.getEvents().map(e=>({title:e.title,start:e.start,end:e.end,extendedProps:e.extendedProps}));persistEvents();calendar.destroy();calendar=null;calendarApp.style.display='none';loginScreen.style.display='flex';});
-    inscBtn.addEventListener('click',()=>{
-      calendarApp.style.display='none';inscriptionsApp.style.display='flex';
-      const list=document.getElementById('inscriptionsList');list.innerHTML='';
-      registrations.forEach(ev=>{
-        const div=document.createElement('div');div.className='inscription';
-        const d=new Date(ev.start);
-        div.innerHTML=`<h4>${ev.title}</h4><p>${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>`;
-        list.appendChild(div);
-      });
-    });
->>>>>>> 0dc76eabac2aa35c970954b901d9459191331edd
     backBtn.addEventListener('click',()=>{inscriptionsApp.style.display='none';calendarApp.style.display='flex';});
     eventImageInput.addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>imageData=ev.target.result;r.readAsDataURL(f);} });
     function initCalendar(){

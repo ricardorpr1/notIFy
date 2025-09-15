@@ -19,7 +19,6 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       width: 350px;
     }
-    .hidden { display: none; }
     .btn {
       display: block;
       width: 100%;
@@ -59,25 +58,8 @@
   </style>
 </head>
 <body>
-  <div class="card" id="evento">
-    <h2>Festa Junina</h2>
-    <p>16:00 — 22:00</p>
-    <p>Limite de participantes: 300</p>
-    <p>Local: Ginásio</p>
-    <p>Turmas: Todas</p>
-    <p>Staff: Terceiros anos</p>
-    <p>
-      Participe da nossa Festa Junina anual, que contará com muita música,
-      dança e comida típica.
-    </p>
-    <div style="background:#fcdcdc;padding:10px;border-radius:8px;margin:10px 0;text-align:center;">
-      Esse evento já acabou! :(
-      Deseja avaliar como foi o evento?
-    </div>
-    <button class="btn" onclick="abrirAvaliacao()">Avaliar</button>
-  </div>
 
-  <div class="card hidden" id="avaliacao">
+  <div class="card" id="avaliacao">
     <h2>Avaliação do Evento — Festa Junina</h2>
     <div class="stars" id="stars">
       <span class="star" data-value="1">★</span>
@@ -121,11 +103,6 @@
 
     function resetStars() {
       stars.forEach(s => s.classList.remove('active'));
-    }
-
-    function abrirAvaliacao() {
-      document.getElementById('evento').classList.add('hidden');
-      document.getElementById('avaliacao').classList.remove('hidden');
     }
 
     function enviar() {
