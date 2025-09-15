@@ -29,8 +29,15 @@
 </head>
 <body>
   <h1>Leitor de QR Code</h1>
-  <button id="start-btn">📷 Abrir Câmera</button>
-  <button id="switch-btn" disabled>🔄 Trocar Câmera</button>
+
+  <!-- Botão Voltar -->
+  <button id="back-btn">⬅️ Voltar</button>
+
+  <div>
+    <button id="start-btn">📷 Abrir Câmera</button>
+    <button id="switch-btn" disabled>🔄 Trocar Câmera</button>
+  </div>
+
   <div id="reader"></div>
   <div id="result"></div>
 
@@ -39,6 +46,7 @@
     const switchBtn = document.getElementById("switch-btn");
     const readerElem = document.getElementById("reader");
     const resultElem = document.getElementById("result");
+    const backBtn = document.getElementById("back-btn");
 
     const html5QrCode = new Html5Qrcode("reader");
     let cameras = [];
@@ -89,6 +97,27 @@
         console.error("Erro ao iniciar câmera:", err);
       });
     }
+
+    // Botão Voltar: para scanner (se ativo) e volta para index.html
+    backBtn.addEventListener('click', async () => {
+      try {
+        if (scanning) {
+          await html5QrCode.stop();
+          scanning = false;
+        }
+      } catch (err) {
+        console.warn('Erro ao parar scanner antes de voltar:', err);
+      }
+      // navega para a página principal
+      window.location.href = 'index.html';
+    });
+
+    // Proteção extra: ao recarregar/fechar a página, para a câmera se estiver ativa
+    window.addEventListener('beforeunload', async (e) => {
+      if (scanning) {
+        try { await html5QrCode.stop(); } catch(_) {}
+      }
+    });
   </script>
 </body>
 </html>

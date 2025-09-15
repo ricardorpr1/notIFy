@@ -76,11 +76,17 @@
     <p id="viewDesc"></p>
     <img id="viewImg" src="" alt="" style="width:100%;display:none;margin-bottom:10px;" />
     <button id="inscribeBtn">Inscrever-se</button>
+    <!-- Botão novo: exportar lista de participantes (aparece apenas para organizador) -->
+    <button id="exportParticipantsBtn" style="display:none;">Exibir lista de participantes</button>
+    <button id="readQrBtn" style="display:none;">Ler QR code</button>
     <button id="editEvent">Editar</button>
     <button id="deleteEvent">Excluir</button>
     <button id="closeView">Fechar</button>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <!-- PapaParse (biblioteca para gerar CSV) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script>
     let userRole='user';
     const loginScreen=document.getElementById('loginScreen');
@@ -133,13 +139,25 @@
       const editEvent=document.getElementById('editEvent');
       const deleteEvent=document.getElementById('deleteEvent');
       const inscribeBtn=document.getElementById('inscribeBtn');
+      const exportBtn=document.getElementById('exportParticipantsBtn');
+      const readQrBtn=document.getElementById('readQrBtn');
       let currentEvent=null;
       function showO(){overlay.style.display='block';}
       function hideO(){overlay.style.display='none';}
       function toggle(m,s){m.style.display=s?'block':'none';}
       function clear(){document.getElementById('eventTitle').value='';document.getElementById('eventStart').value='';document.getElementById('eventEnd').value='';document.getElementById('eventDescription').value='';eventImageInput.value='';imageData=null;}
       function color(s,e){const n=new Date();if(n<new Date(s))return'green';if(n<=new Date(e))return'yellow';return'red';}
-      calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{initialView:'dayGridMonth',locale:'pt-br',headerToolbar:{left:'prev,next today',center:'title',right:'dayGridMonth,timeGridWeek,timeGridDay'},events:eventsData,eventClick:info=>{currentEvent=info.event;document.getElementById('viewTitle').innerText=info.event.title;document.getElementById('viewDesc').innerText=info.event.extendedProps.description||'';const imgEl=document.getElementById('viewImg');if(info.event.extendedProps.image){imgEl.src=info.event.extendedProps.image;imgEl.style.display='block';}else imgEl.style.display='none';const exists = registrations.some(r => r.title===info.event.title && r.start===info.event.start);inscribeBtn.innerText = exists ? 'Remover inscrição' : 'Inscrever-se';editEvent.style.display=userRole==='organizador'?'inline-block':'none';deleteEvent.style.display=userRole==='organizador'?'inline-block':'none';inscribeBtn.style.display=userRole==='user'?'inline-block':'none';showO();toggle(viewModal,true);},eventDidMount:info=>{const c=color(info.event.start,info.event.end);info.el.style.backgroundColor=c;info.el.style.borderColor=c;}});
+      calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{initialView:'dayGridMonth',locale:'pt-br',headerToolbar:{left:'prev,next today',center:'title',right:'dayGridMonth,timeGridWeek,timeGridDay'},events:eventsData,eventClick:info=>{currentEvent=info.event;document.getElementById('viewTitle').innerText=info.event.title;document.getElementById('viewDesc').innerText=info.event.extendedProps.description||'';const imgEl=document.getElementById('viewImg');if(info.event.extendedProps.image){imgEl.src=info.event.extendedProps.image;imgEl.style.display='block';}else imgEl.style.display='none';const exists = registrations.some(r => r.title===info.event.title && r.start===info.event.start);inscribeBtn.innerText = exists ? 'Remover inscrição' : 'Inscrever-se';
+        // mostrar/ocultar botões conforme papel do usuário
+        editEvent.style.display=userRole==='organizador'?'inline-block':'none';
+        deleteEvent.style.display=userRole==='organizador'?'inline-block':'none';
+        inscribeBtn.style.display=userRole==='user'?'inline-block':'none';
+        exportBtn.style.display = userRole==='organizador'?'inline-block':'none';
+        // mostrar botão Ler QR somente se for organizador E se o evento estiver em andamento (amarelo)
+        const evtColor = color(info.event.start, info.event.end);
+        readQrBtn.style.display = (userRole==='organizador' && evtColor==='yellow') ? 'inline-block' : 'none';
+        showO();toggle(viewModal,true);
+      },eventDidMount:info=>{const c=color(info.event.start,info.event.end);info.el.style.backgroundColor=c;info.el.style.borderColor=c;}});
       calendar.render();
       addBtn.addEventListener('click',()=>{currentEvent=null;clear();document.getElementById('modalTitle').innerText='Adicionar Evento';showO();toggle(addModal,true);});
       saveEvent.addEventListener('click',()=>{const t=document.getElementById('eventTitle').value;const s=document.getElementById('eventStart').value;const e=document.getElementById('eventEnd').value;const d=document.getElementById('eventDescription').value;if(!t||!s||!e)return alert('Preencha todos os campos!');const img=imageData||(currentEvent?currentEvent.extendedProps.image:null);const ev={title:t,start:s,end:e,extendedProps:{description:d,image:img}};if(currentEvent){currentEvent.setProp('title',t);currentEvent.setStart(s);currentEvent.setEnd(e);currentEvent.setExtendedProp('description',d);currentEvent.setExtendedProp('image',img);}else{calendar.addEvent(ev);}eventsData=calendar.getEvents().map(e=>({title:e.title,start:e.start,end:e.end,extendedProps:e.extendedProps}));persistEvents();toggle(addModal,false);hideO();});
@@ -147,6 +165,40 @@
       editEvent.addEventListener('click',()=>{if(!currentEvent)return;document.getElementById('modalTitle').innerText='Editar Evento';document.getElementById('eventTitle').value=currentEvent.title;document.getElementById('eventStart').value=currentEvent.start.toISOString().slice(0,16);document.getElementById('eventEnd').value=currentEvent.end.toISOString().slice(0,16);document.getElementById('eventDescription').value=currentEvent.extendedProps.description||'';imageData=currentEvent.extendedProps.image||null;toggle(viewModal,false);showO();toggle(addModal,true);});
       deleteEvent.addEventListener('click',()=>{if(currentEvent){currentEvent.remove();eventsData=calendar.getEvents().map(e=>({title:e.title,start:e.start,end:e.end,extendedProps:e.extendedProps}));persistEvents();}toggle(viewModal,false);hideO();});
       inscribeBtn.addEventListener('click',()=>{if(!currentEvent) return;const idx=registrations.findIndex(r=>r.title===currentEvent.title&&r.start===currentEvent.start);if(idx===-1){registrations.push({title:currentEvent.title,start:currentEvent.start});alert('Inscrito com sucesso!');inscribeBtn.innerText='Remover inscrição';}else{registrations.splice(idx,1);alert('Inscrição removida com sucesso!');inscribeBtn.innerText='Inscrever-se';}persistRegs();toggle(viewModal,false);hideO();});
+
+      // Listener adicional para abrir index2.html (Ler QR code)
+      if (readQrBtn) {
+        readQrBtn.addEventListener('click', () => {
+          if (!currentEvent) return;
+          window.location.href = 'index2.html';
+        });
+      }
+
+      // Novo: exportar lista de participantes (protótipo, mesma lista fixa para todos os eventos)
+      exportBtn.addEventListener('click',()=>{
+        if(!currentEvent) return;
+        // lista fixa de 5 participantes (protótipo)
+        const participants = [
+          { Nome: 'Ana Beatriz Silva', CPF: '123.456.789-00', RA: '2023001' },
+          { Nome: 'Bruno Carlos Souza', CPF: '987.654.321-11', RA: '2023002' },
+          { Nome: 'Carla Mariana Lima', CPF: '111.222.333-44', RA: '2023003' },
+          { Nome: 'Diego Henrique Rocha', CPF: '555.666.777-88', RA: '2023004' },
+          { Nome: 'Eduarda Fernanda Alves', CPF: '999.888.777-66', RA: '2023005' }
+        ];
+        const csv = Papa.unparse(participants);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // filename com o título do evento (sanitizado)
+        const safeTitle = (currentEvent.title || 'event').replace(/[^a-z0-9\-_, ]/gi,'').replace(/\s+/g,'_');
+        a.download = `${safeTitle}_participants.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
     }
   </script>
 </body>

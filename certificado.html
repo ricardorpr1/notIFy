@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificado IFMG</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const { jsPDF } = window.jspdf;
+
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+
+      const imgFundo = new Image();
+      imgFundo.src = "certificado-base.png"; 
+
+      imgFundo.onload = function () {
+        doc.addImage(imgFundo, "PNG", 0, 0, pageWidth, pageHeight);
+
+        // Títulos
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("INSTITUTO FEDERAL Minas Gerais", pageWidth / 2, 60, { align: 'center' });
+
+        doc.setFontSize(18);
+        doc.text("CERTIFICADO", pageWidth / 2, 75, { align: 'center' });
+
+        // Texto principal
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(14);
+        let texto = `Certificamos que Fulano Ciclano da Silva, CPF 123.456.789-10, participou do(a) UNIF 2025, no período de 11/07/2025 a 13/07/2025, promovido pelo Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais-campus OURO BRANCO, perfazendo um total de 20hs.`;
+
+        // Função para quebrar texto por palavras
+        function quebrarTextoPorPalavras(str, limite) {
+          let palavras = str.split(" ");
+          let linhas = [];
+          let linhaAtual = "";
+
+          for (let palavra of palavras) {
+            if ((linhaAtual + palavra).length <= limite) {
+              linhaAtual += (linhaAtual === "" ? palavra : " " + palavra);
+            } else {
+              linhas.push(linhaAtual);
+              linhaAtual = palavra;
+            }
+          }
+          if (linhaAtual !== "") {
+            linhas.push(linhaAtual);
+          }
+          return linhas.join("\n");
+        }
+
+
+        texto = quebrarTextoPorPalavras(texto, 100);
+
+        // Escreve texto na área branca
+        doc.text(texto, 40, 100);
+
+        doc.text("OURO BRANCO / MG, 08/09/2025.", 40, 150);
+
+        // Rodapé
+        doc.setFontSize(10);
+        doc.text("Este documento foi emitido pelo SUAP. Para comprovar sua autenticidade acesse:", 40, pageHeight - 40);
+        doc.setTextColor(0, 0, 255);
+        doc.text("https://suap.ifmg.edu.br/eventos/baixar_certificado/?hash=41f5f0cd72874eec", 40, pageHeight - 30);
+        doc.setTextColor(0, 0, 0);
+
+        doc.save("certificado-ifmg.pdf");
+      };
+    });
+  </script>
+</body>
+</html>
