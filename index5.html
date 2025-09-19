@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cartão do Aluno</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: Arial, sans-serif;
@@ -43,9 +39,7 @@
       object-fit: cover;
     }
 
-    .card header h1 {
-      font-size: 28px;
-    }
+    .card header h1 { font-size: 28px; }
 
     .info {
       display: flex;
@@ -60,38 +54,39 @@
       font-size: 16px;
     }
 
-    .info strong {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
+    .info strong { display: block; font-weight: bold; margin-bottom: 4px; }
+
+    /* Botões: agora em uma linha */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
     }
 
-    button {
-      background-color: #009688;
-      color: white;
+    .btn-row button {
       padding: 12px 20px;
       border: none;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.2s;
-      width: 100%;
+      flex: 1;
     }
 
-    button:hover {
-      background-color: #00796b;
+    .btn-primary {
+      background-color: #009688;
+      color: white;
     }
+    .btn-primary:hover { background-color: #00796b; }
 
-    .qrcodeContent {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
+    .btn-secondary {
+      background-color: #6b7280;
+      color: white;
     }
+    .btn-secondary:hover { background-color: #4b5563; }
 
-    .qrcodeContent img {
-      width: 150px;
-      height: 150px;
-    }
+    .qrcodeContent { display: flex; justify-content: center; margin-top: 20px; }
+    .qrcodeContent img { width: 150px; height: 150px; }
   </style>
 </head>
 <body>
@@ -111,7 +106,11 @@
       <p><strong>Data de Nascimento</strong>09/08/2007</p>
     </div>
 
-    <button id="generateBtn">GERAR QR CODE</button>
+    <!-- Botões: Gerar QR e Voltar -->
+    <div class="btn-row">
+      <button id="generateBtn" class="btn-primary">GERAR QR CODE</button>
+      <button id="backBtn" class="btn-secondary" aria-label="Voltar ao calendário">VOLTAR</button>
+    </div>
 
     <div class="qrcodeContent">
       <img id="qrcode" src="" alt="QR Code">
@@ -121,9 +120,14 @@
   <script>
     const qrcode = document.querySelector("#qrcode");
     const cpfSpan = document.querySelector("#cpf");
-    const button = document.querySelector("#generateBtn");
+    const genBtn = document.querySelector("#generateBtn");
+    const backBtn = document.querySelector("#backBtn");
 
-    button.addEventListener("click", genQRCode);
+    genBtn.addEventListener("click", genQRCode);
+    backBtn.addEventListener("click", () => {
+      // leva sempre para index.html (comportamento consistente com as outras páginas)
+      window.location.href = 'index.html';
+    });
 
     function genQRCode() {
       const cpf = cpfSpan.textContent;

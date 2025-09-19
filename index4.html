@@ -68,6 +68,17 @@
             background-color: #244a38;
         }
 
+        .btn-secondary {
+            background-color: #6b7280;
+            width: 140px;
+            display: inline-block;
+            margin: 10px 5px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
         .switch-btn {
             background: none;
             border: none;
@@ -97,6 +108,8 @@
             display: flex;
             justify-content: center;
             gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .switch-btn span {
@@ -132,6 +145,9 @@
             <button id="manual-input-btn" class="switch-btn" title="Inserir manualmente">
                 <span>⌨️</span>
             </button>
+
+            <!-- Botão Voltar -->
+            <button id="back-btn" class="btn-secondary" title="Voltar ao calendário" aria-label="Voltar para o calendário">Voltar</button>
         </div>
 
         <!-- Scanner -->
@@ -148,6 +164,7 @@
         const manualBtn = document.getElementById("manual-input-btn");
         const readerElem = document.getElementById("reader");
         const resultElem = document.getElementById("result");
+        const backBtn = document.getElementById("back-btn");
 
         const html5QrCode = new Html5Qrcode("reader");
         let cameras = [];
@@ -213,6 +230,11 @@
                 console.error("Erro ao iniciar câmera:", err);
             });
         }
+
+        // Botão Voltar: vai sempre para index.html
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
     </script>
 </body>
 
