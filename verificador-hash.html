@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Verificador de Hash - Certificado IFMG</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      margin: 5px;
+      padding: 10px;
+      border-radius: 5px;
+      width: 250px;
+    }
+    button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1976D2;
+    }
+    .resultado {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<form id="verificadorHash">
+  <h2>Verificar Certificado</h2>
+  <input type="text" id="hashInput" placeholder="Digite o Hash do Certificado" required><br>
+  <input type="text" id="cpfInput" placeholder="Digite o CPF do participante" required><br>
+  <button type="button" onclick="verificarHash()">Verificar</button>
+  <div class="resultado" id="resultado"></div>
+</form>
+
+<script>
+function gerarHashSimples(texto) {
+  // Cria um hash simples baseado no texto (CPF + evento, por exemplo)
+  let hash = 0;
+  for (let i = 0; i < texto.length; i++) {
+    hash = (hash << 5) - hash + texto.charCodeAt(i);
+    hash |= 0; // Converte para 32-bit
+  }
+  return Math.abs(hash).toString(36).substring(0, 8).toUpperCase();
+}
+
+function verificarHash() {
+  const hashInput = document.getElementById("hashInput").value.trim().toUpperCase();
+  const cpfInput = document.getElementById("cpfInput").value.trim();
+
+  if (!hashInput || !cpfInput) {
+    alert("Preencha todos os campos!");
+    return;
+  }
+
+  // Exemplo: o hash original deveria ser gerado assim:
+  const hashEsperado = gerarHashSimples(cpfInput); // Aqui você poderia incluir o nome ou evento também
+
+  const resultadoDiv = document.getElementById("resultado");
+  if (hashInput === hashEsperado) {
+    resultadoDiv.style.color = "green";
+    resultadoDiv.textContent = "Hash válido! Certificado autêntico.";
+  } else {
+    resultadoDiv.style.color = "red";
+    resultadoDiv.textContent = "Hash inválido! Certificado não reconhecido.";
+  }
+}
+</script>
+
+</body>
+</html>
