@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Evento - notIFy</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7f7f7; }
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    label { display: block; margin-top: 10px; }
+    input, textarea {
+      width: 100%; padding: 8px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 5px;
+    }
+    button {
+      margin-top: 20px; padding: 10px 20px;
+      border: none; border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-create { background: #228B22; color: white; }
+    .btn-back { background: #ccc; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Criar Evento</h2>
+    <form id="eventForm">
+      <label>Nome: <input type="text" name="nome" required></label>
+      <label>Descrição: <textarea name="descricao"></textarea></label>
+      <label>Local: <input type="text" name="local"></label>
+      <label>Data: <input type="date" name="data_evento" required></label>
+      <label>Hora início: <input type="time" name="horario_inicio"></label>
+      <label>Hora fim: <input type="time" name="horario_fim"></label>
+      <label>Ícone URL: <input type="text" name="icone_url"></label>
+      <label>Capa URL: <input type="text" name="capa_url"></label>
+      <label>Limite de participantes: <input type="number" name="limite_participantes"></label>
+      <label>Turmas permitidas (separadas por vírgula): <input type="text" name="turmas_permitidas"></label>
+      <label>Colaboradores (separados por vírgula): <input type="text" name="colaboradores"></label>
+
+      <button type="submit" class="btn-create">Criar</button>
+      <button type="button" class="btn-back" onclick="window.location.href='index.html'">Voltar</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("eventForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      // Arrays
+      data.turmas_permitidas = data.turmas_permitidas ? data.turmas_permitidas.split(",").map(t => t.trim()) : [];
+      data.colaboradores = data.colaboradores ? data.colaboradores.split(",").map(c => c.trim()) : [];
+
+      try {
+        const res = await fetch("create_event.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        alert(result.mensagem || result.erro);
+        if (result.mensagem) window.location.href = "index.html";
+      } catch (err) {
+        alert("Erro: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

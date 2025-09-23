@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8">
   <title>Festa Junina</title>
@@ -13,19 +12,13 @@
       align-items: center;
       height: 100vh;
     }
-
     .card {
       background: white;
       padding: 20px;
       border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       width: 350px;
     }
-
-    .hidden {
-      display: none;
-    }
-
     .btn {
       display: block;
       width: 100%;
@@ -38,9 +31,14 @@
       border-radius: 8px;
       cursor: pointer;
     }
+    .btn:hover { background: #166534; }
 
-    .btn:hover {
-      background: #166534;
+    /* botão Voltar (visual distinto) */
+    .btn-secondary {
+      background: #6b7280;
+    }
+    .btn-secondary:hover {
+      background: #4b5563;
     }
 
     .stars {
@@ -50,16 +48,13 @@
       font-size: 28px;
       cursor: pointer;
     }
-
     .star {
       color: #d1d5db;
     }
-
     .star.active,
     .star.hover {
       color: #facc15;
     }
-
     textarea {
       width: 100%;
       height: 80px;
@@ -69,29 +64,16 @@
       resize: none;
       margin-top: 10px;
     }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row .btn { flex: 1; }
   </style>
 </head>
-
 <body>
-  <div class="card" id="evento">
-    <h2>Festa Junina</h2>
-    <p>16:00 — 22:00</p>
-    <p>Limite de participantes: 300</p>
-    <p>Local: Ginásio</p>
-    <p>Turmas: Todas</p>
-    <p>Staff: Terceiros anos</p>
-    <p>
-      Participe da nossa Festa Junina anual, que contará com muita música,
-      dança e comida típica.
-    </p>
-    <div style="background:#fcdcdc;padding:10px;border-radius:8px;margin:10px 0;text-align:center;">
-      Esse evento já acabou! :(
-      Deseja avaliar como foi o evento?
-    </div>
-    <button class="btn" onclick="abrirAvaliacao()">Avaliar</button>
-  </div>
-  
-  <div class="card hidden" id="avaliacao">
+
+  <div class="card" id="avaliacao">
     <h2>Avaliação do Evento — Festa Junina</h2>
     <div class="stars" id="stars">
       <span class="star" data-value="1">★</span>
@@ -102,7 +84,12 @@
     </div>
     <p id="notaEscolhida" style="text-align:center;color:#374151;margin:5px 0;"></p>
     <textarea id="comentario" placeholder="Deixe um comentário sobre o evento..."></textarea>
-    <button class="btn" onclick="enviar()">Enviar</button>
+
+    <!-- Linha com os botões: Enviar e Voltar -->
+    <div class="row" style="margin-top:12px;">
+      <button class="btn" onclick="enviar()">Enviar</button>
+      <button class="btn btn-secondary" onclick="voltar()" aria-label="Voltar para o calendário">Voltar</button>
+    </div>
   </div>
 
   <script>
@@ -137,17 +124,16 @@
       stars.forEach(s => s.classList.remove('active'));
     }
 
-    function abrirAvaliacao() {
-      document.getElementById('evento').classList.add('hidden');
-      document.getElementById('avaliacao').classList.remove('hidden');
-    }
-
     function enviar() {
       const comentario = document.getElementById('comentario').value;
       alert(`Avaliação enviada! Nota: ${nota}, Comentário: ${comentario}`);
-      location.href = "index.html";
+      location.reload();
+    }
+
+    // novo: volta explicitamente para index.html
+    function voltar() {
+      window.location.href = 'index.html';
     }
   </script>
 </body>
-
 </html>

@@ -1,65 +1,143 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Certificado IFMG</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, button {
+      margin: 5px;
+      padding: 10px;
+      border-radius: 5px;
+      width: 250px;
+    }
+    .btns {
+      display: flex;
+      justify-content: space-between;
+    }
+    .btns button {
+      background: #4caf50;
+      border: none;
+      color: white;
+      cursor: pointer;
+      flex: 1;
+      margin: 5px;
+    }
+    .btns button:hover {
+      background: #45a049;
+    }
+  </style>
 </head>
 <body>
-  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const { jsPDF } = window.jspdf;
 
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+<form id="formCertificado">
+  <h2>Gerar Certificado IFMG</h2>
+  <input type="text" id="nome" placeholder="Nome Completo" required><br>
+  <input type="text" id="cpf" placeholder="CPF" required><br>
+  <input type="text" id="evento" placeholder="Nome do Evento" required><br>
+  <label>Data do Evento:</label>
+  <input type="date" id="data" required><br>
+  <label>Hora Início:</label>
+  <input type="time" id="hora_inicio" required><br>
+  <label>Hora Fim:</label>
+  <input type="time" id="hora_fim" required><br>
+  <div class="btns">
+    <button type="button" onclick="gerarCertificado('palestrante')">Sou Palestrante</button>
+    <button type="button" onclick="gerarCertificado('organizador')">Sou Organizador</button>
+    <button type="button" onclick="gerarCertificado('participante')">Sou Participante</button>
+  </div>
+</form>
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+<script>
+function gerarCertificado(funcao) {
+  const nome = document.getElementById("nome").value;
+  const cpf = document.getElementById("cpf").value;
+  const evento = document.getElementById("evento").value;
+  const data = document.getElementById("data").value;
+  const horaInicio = document.getElementById("hora_inicio").value;
+  const horaFim = document.getElementById("hora_fim").value;
 
+<<<<<<< HEAD
       const imgFundo = new Image();
       imgFundo.src = "Design.png"; 
+=======
+  if (!nome || !cpf || !evento || !data || !horaInicio || !horaFim) {
+    alert("Preencha todos os campos!");
+    return;
+  }
+>>>>>>> 679d2970ec92b830dab616d3b05467d298e82ad4
 
-      imgFundo.onload = function () {
-        doc.addImage(imgFundo, "PNG", 0, 0, pageWidth, pageHeight);
+  // Calcula horas
+  const inicio = new Date(`1970-01-01T${horaInicio}:00`);
+  const fim = new Date(`1970-01-01T${horaFim}:00`);
+  const diff = (fim - inicio) / (1000 * 60 * 60);
+  const totalHoras = diff.toFixed(1);
 
-        // Título
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.text("INSTITUTO FEDERAL Minas Gerais", pageWidth / 2, 60, { align: 'center' });
+  // Formata data
+  const partes = data.split("-");
+  const dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
 
-        doc.setFontSize(18);
-        doc.text("CERTIFICADO", pageWidth / 2, 75, { align: 'center' });
+  // Gera hash simples
+  const hash = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        // Texto principal
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(14);
-        let texto = `Certificamos que Ricardo Rodrigues Pereira Rezende, CPF 149.497.936-59, participou do(a) UNIF 2025, no período de 11/07/2025 a 13/07/2025, promovido pelo Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais-campus OURO BRANCO, perfazendo um total de 20hs.`;
+  // Texto dinâmico
+  let texto = "";
+  if (funcao === "palestrante") {
+    texto = `Certificamos que ${nome}, CPF ${cpf}, palestrou no(a) ${evento}, no dia ${dataFormatada}, promovido pelo Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais-campus OURO BRANCO, perfazendo um total de ${totalHoras}h.`;
+  } else if (funcao === "organizador") {
+    texto = `Certificamos que ${nome}, CPF ${cpf}, colaborou na organização do(a) ${evento}, no dia ${dataFormatada}, promovido pelo Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais-campus OURO BRANCO, perfazendo um total de ${totalHoras}h.`;
+  } else {
+    texto = `Certificamos que ${nome}, CPF ${cpf}, participou do(a) ${evento}, no dia ${dataFormatada}, promovido pelo Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais-campus OURO BRANCO, perfazendo um total de ${totalHoras}h.`;
+  }
 
-        if (texto.length > 100) {
-          let linhas = [];
-          for (let i = 0; i < texto.length; i += 100) {
-            linhas.push(texto.substring(i, i + 100));
-          }
-          texto = linhas.join("\n");
-        }
+  // Gera PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-        doc.text(texto, 40, 100);
+  const img = new Image();
+  img.src = "design-certo.png"; // fundo do certificado
+  img.onload = () => {
+    doc.addImage(img, "PNG", 0, 0, 297, 210);
 
-        doc.text("OURO BRANCO / MG, 08/09/2025.", 40, 150);
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-      
-        doc.setFontSize(10);
-        doc.text("Este documento foi emitido pelo SUAP. Para comprovar sua autenticidade acesse:", 40, pageHeight - 40);
-        doc.setTextColor(0, 0, 255);
-        doc.text("https://suap.ifmg.edu.br/eventos/baixar_certificado/?hash=41f5f0cd72874eec", 40, pageHeight - 30);
-        doc.setTextColor(0, 0, 0);
+    // Adiciona título IFMG
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("INSTITUTO FEDERAL Minas Gerais", pageWidth / 2, 60, { align: "center" });
 
-        doc.save("certificado-ifmg.pdf");
-      };
-    });
-  </script>
+    doc.setFontSize(18);
+    doc.text("CERTIFICADO", pageWidth / 2, 75, { align: "center" });
+
+    const textoFormatado = doc.splitTextToSize(texto, pageWidth - 40);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(14);
+    doc.text(textoFormatado, 20, 120);
+
+    doc.setFontSize(10);
+    doc.text("Código de Verificação: " + hash, 20, 200);
+
+    doc.save("certificado-ifmg.pdf");
+  };
+}
+</script>
+
 </body>
 </html>

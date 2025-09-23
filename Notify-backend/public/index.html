@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>notIFy - Calendário</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #calendar { max-width: 900px; margin: 50px auto; }
+    #addBtn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background: #228B22;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #addBtn:hover { background: #1c6e1c; }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Calendário - notIFy</h2>
+  <button id="addBtn">Adicionar Evento</button>
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script>
+    document.getElementById("addBtn").addEventListener("click", () => {
+      window.location.href = "adicionarevento.html";
+    });
+
+    const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+      initialView: "dayGridMonth",
+      locale: "pt-br"
+      // Aqui depois vamos carregar eventos do banco com PHP
+    });
+    calendar.render();
+  </script>
+</body>
+</html>
