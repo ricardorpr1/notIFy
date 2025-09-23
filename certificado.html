@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -66,23 +65,18 @@
 </form>
 
 <script>
+function formatarCPF(cpf) {
+  cpf = cpf.replace(/\D/g, "");
+  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
 function gerarCertificado(funcao) {
   const nome = document.getElementById("nome").value;
-  const cpf = document.getElementById("cpf").value;
+  const cpf = formatarCPF(document.getElementById("cpf").value);
   const evento = document.getElementById("evento").value;
   const data = document.getElementById("data").value;
   const horaInicio = document.getElementById("hora_inicio").value;
   const horaFim = document.getElementById("hora_fim").value;
-
-<<<<<<< HEAD
-      const imgFundo = new Image();
-      imgFundo.src = "Design.png"; 
-=======
-  if (!nome || !cpf || !evento || !data || !horaInicio || !horaFim) {
-    alert("Preencha todos os campos!");
-    return;
-  }
->>>>>>> 679d2970ec92b830dab616d3b05467d298e82ad4
 
   // Calcula horas
   const inicio = new Date(`1970-01-01T${horaInicio}:00`);
@@ -112,13 +106,12 @@ function gerarCertificado(funcao) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
   const img = new Image();
-  img.src = "design-certo.png"; // fundo do certificado
+  img.src = "certificado-base.png";
   img.onload = () => {
     doc.addImage(img, "PNG", 0, 0, 297, 210);
 
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Adiciona título IFMG
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.text("INSTITUTO FEDERAL Minas Gerais", pageWidth / 2, 60, { align: "center" });
@@ -126,13 +119,17 @@ function gerarCertificado(funcao) {
     doc.setFontSize(18);
     doc.text("CERTIFICADO", pageWidth / 2, 75, { align: "center" });
 
-    const textoFormatado = doc.splitTextToSize(texto, pageWidth - 40);
+    // Centraliza o bloco, mas alinha o texto à esquerda
     doc.setFont("helvetica", "normal");
     doc.setFontSize(14);
-    doc.text(textoFormatado, 20, 120);
+    const textoFormatado = doc.splitTextToSize(texto, 240);
+    const textoAltura = textoFormatado.length * 8;
+    const yInicial = (210 - textoAltura) / 2;
+    const margemEsquerda = (pageWidth - 240) / 2; // centraliza o bloco
+    doc.text(textoFormatado, margemEsquerda, yInicial, { align: "left" });
 
     doc.setFontSize(10);
-    doc.text("Código de Verificação: " + hash, 20, 200);
+    doc.text("Código de Verificação: " + hash, pageWidth / 2, 200, { align: "center" });
 
     doc.save("certificado-ifmg.pdf");
   };
