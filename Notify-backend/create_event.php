@@ -4,12 +4,24 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Configuração do banco (use os dados do seu .env ou substitua manualmente)
-$host = "localhost";
-$port = "5432";
+// Configuração do banco
+$host = "127.0.0.1";
+$port = "3306";
 $dbname = "notify_db";
-$user = "seu_usuario";
-$password = "sua_senha";
+$user = "tcc_notify";
+$password = "108Xk:C";
+
+// Função para montar arrays do PostgreSQL
+function pg_array_literal($arr) {
+    if (!is_array($arr) || count($arr) === 0) return '{}';
+    $items = [];
+    foreach ($arr as $v) {
+        // Escapa aspas duplas
+        $v = str_replace('"', '\"', $v);
+        $items[] = '"' . $v . '"';
+    }
+    return '{' . implode(',', $items) . '}';
+}
 
 try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password, [
@@ -24,7 +36,7 @@ try {
 $data = json_decode(file_get_contents("php://input"), true);
 if (!$data) {
     http_response_code(400);
-    echo json_encode(["erro" => "Dados inválidos"]);
+    echo json_encode(["erro" => "Dados inválidos ou ausentes"]);
     exit;
 }
 
@@ -44,8 +56,8 @@ try {
         ":icone_url" => $data["icone_url"] ?? null,
         ":capa_url" => $data["capa_url"] ?? null,
         ":limite_participantes" => $data["limite_participantes"] ?? null,
-        ":turmas_permitidas" => isset($data["turmas_permitidas"]) ? '{' . implode(',', $data["turmas_permitidas"]) . '}' : '{}',
-        ":colaboradores" => isset($data["colaboradores"]) ? '{' . implode(',', $data["colaboradores"]) . '}' : '{}',
+        ":turmas_permitidas" => pg_array_literal($data["turmas_permitidas"] ?? []),
+        ":colaboradores" => pg_array_literal($data["colaboradores"] ?? []),
         ":data_evento" => $data["data_evento"] ?? null
     ]);
 
