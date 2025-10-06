@@ -5,36 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calendário Interativo - notIFy</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-    #calendar { max-width: 900px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+    }
+
+    #calendar-container {
+      max-width: 900px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #addEventBtn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background-color: #228b22;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    #addEventBtn:hover {
+      background-color: #1e7a1e;
+    }
   </style>
 </head>
+
 <body>
-  <div id="calendar"></div>
+  <button id="addEventBtn" onclick="window.location.href='adicionarevento.html'">Adicionar Evento</button>
+
+  <div id="calendar-container">
+    <div id="calendar"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", async function() {
-      let events = [];
-      try {
-        const res = await fetch("list_events.php");
-        const text = await res.text();
-        try {
-          events = JSON.parse(text);
-        } catch (e) {
-          console.error("Resposta não é JSON:", text);
-        }
-      } catch (err) {
-        console.error("Erro ao buscar eventos:", err);
-      }
-
+    document.addEventListener("DOMContentLoaded", async () => {
       const calendarEl = document.getElementById("calendar");
+
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         locale: "pt-br",
-        events: events
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay"
+        },
+        events: async (fetchInfo, successCallback, failureCallback) => {
+          try {
+            const response = await fetch("list_events.php");
+            if (!response.ok) throw new Error("Erro ao buscar eventos do servidor");
+            const data = await response.json();
+
+            // Converter dados do banco em eventos do calendário
+            const events = data.map(ev => ({
+              id: ev.id,
+              title: ev.title,
+              start: ev.start,
+              end: ev.end,
+              extendedProps: {
+                description: ev.description,
+                location: ev.location,
+                image: ev.image
+              }
+            }));
+
+            successCallback(events);
+          } catch (error) {
+            console.error("Erro:", error);
+            failureCallback(error);
+          }
+        },
+        eventClick: function (info) {
+          const event = info.event.extendedProps;
+          const title = info.event.title;
+          let details = `📍 Local: ${event.location || "Não informado"}\n📝 Descrição: ${event.description || "Sem descrição"}`;
+          alert(`Evento: ${title}\n\n${details}`);
+        }
       });
+
       calendar.render();
     });
   </script>
