@@ -4,14 +4,14 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Configuração do banco
+// ConfiguraÃ§Ã£o do banco
 $host = "127.0.0.1";
 $port = "3306";
 $dbname = "notify_db";
 $user = "tcc_notify";
 $password = "108Xk:C";
 
-// Função para montar arrays do PostgreSQL
+// FunÃ§Ã£o para montar arrays do PostgreSQL
 function pg_array_literal($arr) {
     if (!is_array($arr) || count($arr) === 0) return '{}';
     $items = [];
@@ -29,14 +29,14 @@ try {
     ]);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["erro" => "Erro de conexão: " . $e->getMessage()]);
+    echo json_encode(["erro" => "Erro de conexÃ£o: " . $e->getMessage()]);
     exit;
 }
 
 $data = json_decode(file_get_contents("php://input"), true);
 if (!$data) {
     http_response_code(400);
-    echo json_encode(["erro" => "Dados inválidos ou ausentes"]);
+    echo json_encode(["erro" => "Dados invÃ¡lidos ou ausentes"]);
     exit;
 }
 
