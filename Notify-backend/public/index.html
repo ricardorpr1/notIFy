@@ -1,43 +1,102 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>notIFy - Calendário</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalendÃ¡rio Interativo - notIFy</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    #calendar { max-width: 900px; margin: 50px auto; }
-    #addBtn {
-      display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      background: #228B22;
-      color: white;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+    }
+
+    #calendar-container {
+      max-width: 900px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #addEventBtn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background-color: #228b22;
+      color: #fff;
       border: none;
       border-radius: 5px;
+      padding: 10px 20px;
       cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
     }
-    #addBtn:hover { background: #1c6e1c; }
+
+    #addEventBtn:hover {
+      background-color: #1e7a1e;
+    }
   </style>
 </head>
+
 <body>
-  <h2 style="text-align:center;">Calendário - notIFy</h2>
-  <button id="addBtn">Adicionar Evento</button>
-  <div id="calendar"></div>
+  <button id="addEventBtn" onclick="window.location.href='adicionarevento.html'">Adicionar Evento</button>
+
+  <div id="calendar-container">
+    <div id="calendar"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
-    document.getElementById("addBtn").addEventListener("click", () => {
-      window.location.href = "adicionarevento.html";
-    });
+    document.addEventListener("DOMContentLoaded", async () => {
+      const calendarEl = document.getElementById("calendar");
 
-    const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
-      initialView: "dayGridMonth",
-      locale: "pt-br"
-      // Aqui depois vamos carregar eventos do banco com PHP
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "pt-br",
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay"
+        },
+        events: async (fetchInfo, successCallback, failureCallback) => {
+          try {
+            const response = await fetch("list_events.php");
+            if (!response.ok) throw new Error("Erro ao buscar eventos do servidor");
+            const data = await response.json();
+
+            // Converter dados do banco em eventos do calendÃ¡rio
+            const events = data.map(ev => ({
+              id: ev.id,
+              title: ev.title,
+              start: ev.start,
+              end: ev.end,
+              extendedProps: {
+                description: ev.description,
+                location: ev.location,
+                image: ev.image
+              }
+            }));
+
+            successCallback(events);
+          } catch (error) {
+            console.error("Erro:", error);
+            failureCallback(error);
+          }
+        },
+        eventClick: function (info) {
+          const event = info.event.extendedProps;
+          const title = info.event.title;
+          let details = `ðŸ“ Local: ${event.location || "NÃ£o informado"}\nðŸ“ DescriÃ§Ã£o: ${event.description || "Sem descriÃ§Ã£o"}`;
+          alert(`Evento: ${title}\n\n${details}`);
+        }
+      });
+
+      calendar.render();
     });
-    calendar.render();
   </script>
 </body>
 </html>
