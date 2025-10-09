@@ -3,73 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Criar Evento - notIFy</title>
+  <title>Adicionar Evento - notIFy</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; }
-    .container {
-      max-width: 500px;
-      margin: 50px auto;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
       padding: 20px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    label { display: block; margin-top: 10px; }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 20px auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
     input, textarea {
-      width: 100%; padding: 8px; margin-top: 5px;
-      border: 1px solid #ccc; border-radius: 5px;
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
     }
     button {
-      margin-top: 20px; padding: 10px 20px;
-      border: none; border-radius: 5px;
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #228B22;
+      color: #fff;
       cursor: pointer;
     }
-    .btn-create { background: #228B22; color: white; }
-    .btn-back { background: #ccc; margin-left: 10px; }
+    button:hover {
+      background-color: #1c731c;
+    }
+    .voltar {
+      display: block;
+      text-align: center;
+      margin-top: 15px;
+      color: #555;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Criar Evento</h2>
-    <form id="eventForm">
-      <label>Nome: <input type="text" name="nome" required></label>
-      <label>Descrição: <textarea name="descricao"></textarea></label>
-      <label>Local: <input type="text" name="local"></label>
-      <label>Data: <input type="date" name="data_evento" required></label>
-      <label>Hora início: <input type="time" name="horario_inicio"></label>
-      <label>Hora fim: <input type="time" name="horario_fim"></label>
-      <label>Ícone URL: <input type="text" name="icone_url"></label>
-      <label>Capa URL: <input type="text" name="capa_url"></label>
-      <label>Limite de participantes: <input type="number" name="limite_participantes"></label>
-      <label>Turmas permitidas (separadas por vírgula): <input type="text" name="turmas_permitidas"></label>
-      <label>Colaboradores (separados por vírgula): <input type="text" name="colaboradores"></label>
+  <h2>Adicionar Novo Evento</h2>
+  <form id="eventoForm">
+    <label>Nome do Evento:</label>
+    <input type="text" id="nome" required>
 
-      <button type="submit" class="btn-create">Criar</button>
-      <button type="button" class="btn-back" onclick="window.location.href='index.html'">Voltar</button>
-    </form>
-  </div>
+    <label>Descrição:</label>
+    <textarea id="descricao" rows="3"></textarea>
+
+    <label>Local:</label>
+    <input type="text" id="local">
+
+    <label>Data do Evento:</label>
+    <input type="date" id="data_evento" required>
+
+    <label>Horário de Início:</label>
+    <input type="time" id="horario_inicio">
+
+    <label>Horário de Fim:</label>
+    <input type="time" id="horario_fim">
+
+    <label>URL do Ícone:</label>
+    <input type="text" id="icone_url">
+
+    <label>URL da Capa:</label>
+    <input type="text" id="capa_url">
+
+    <label>Limite de Participantes:</label>
+    <input type="number" id="limite_participantes">
+
+    <label>Turmas Permitidas (separe por vírgulas):</label>
+    <input type="text" id="turmas_permitidas" placeholder="Ex: Primeiro Ano, Segundo Ano">
+
+    <label>Colaboradores (separe por vírgulas):</label>
+    <input type="text" id="colaboradores" placeholder="Ex: João, Maria">
+
+    <button type="submit">Criar Evento</button>
+  </form>
+
+  <a href="index.html" class="voltar">← Voltar para o calendário</a>
 
   <script>
-    document.getElementById("eventForm").addEventListener("submit", async (e) => {
+    document.getElementById("eventoForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
 
-      // Arrays
-      data.turmas_permitidas = data.turmas_permitidas ? data.turmas_permitidas.split(",").map(t => t.trim()) : [];
-      data.colaboradores = data.colaboradores ? data.colaboradores.split(",").map(c => c.trim()) : [];
+      const data = {
+        nome: document.getElementById("nome").value,
+        descricao: document.getElementById("descricao").value,
+        local: document.getElementById("local").value,
+        data_evento: document.getElementById("data_evento").value,
+        horario_inicio: document.getElementById("horario_inicio").value,
+        horario_fim: document.getElementById("horario_fim").value,
+        icone_url: document.getElementById("icone_url").value,
+        capa_url: document.getElementById("capa_url").value,
+        limite_participantes: document.getElementById("limite_participantes").value,
+        turmas_permitidas: document.getElementById("turmas_permitidas").value.split(",").map(x => x.trim()),
+        colaboradores: document.getElementById("colaboradores").value.split(",").map(x => x.trim())
+      };
 
       try {
-        const res = await fetch("create_event.php", {
+        const response = await fetch("create_event.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
         });
-        const result = await res.json();
-        alert(result.mensagem || result.erro);
-        if (result.mensagem) window.location.href = "index.html";
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(result.mensagem || "Evento criado com sucesso!");
+          window.location.href = "index.html";
+        } else {
+          alert(result.erro || "Erro ao criar o evento.");
+        }
       } catch (err) {
-        alert("Erro: " + err.message + "dfdfdfd");
+        alert("Erro na requisição: " + err.message);
       }
     });
   </script>

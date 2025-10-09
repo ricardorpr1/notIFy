@@ -4,13 +4,18 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
+<<<<<<< HEAD
 // Configuração do banco
+=======
+// Configuração do banco de dados
+>>>>>>> 4c35dd5983ae29a36ad670acf2eef1719aed00dc
 $host = "127.0.0.1";
 $port = "3306";
 $dbname = "notify_db";
 $user = "tcc_notify";
 $password = "108Xk:C";
 
+<<<<<<< HEAD
 // Função para montar arrays do PostgreSQL
 function pg_array_literal($arr) {
     if (!is_array($arr) || count($arr) === 0) return '{}';
@@ -25,6 +30,10 @@ function pg_array_literal($arr) {
 
 try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password, [
+=======
+try {
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $user, $password, [
+>>>>>>> 4c35dd5983ae29a36ad670acf2eef1719aed00dc
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 } catch (PDOException $e) {
@@ -33,6 +42,10 @@ try {
     exit;
 }
 
+<<<<<<< HEAD
+=======
+// Lendo os dados enviados pelo fetch
+>>>>>>> 4c35dd5983ae29a36ad670acf2eef1719aed00dc
 $data = json_decode(file_get_contents("php://input"), true);
 if (!$data) {
     http_response_code(400);
@@ -40,25 +53,23 @@ if (!$data) {
     exit;
 }
 
-$sql = "INSERT INTO eventos 
-(nome, descricao, local, horario_inicio, horario_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores, data_evento)
-VALUES (:nome, :descricao, :local, :horario_inicio, :horario_fim, :icone_url, :capa_url, :limite_participantes, :turmas_permitidas, :colaboradores, :data_evento)";
-
-$stmt = $pdo->prepare($sql);
+$sql = "INSERT INTO eventos (nome, descricao, local, horario_inicio, horario_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores, data_evento)
+        VALUES (:nome, :descricao, :local, :horario_inicio, :horario_fim, :icone_url, :capa_url, :limite_participantes, :turmas_permitidas, :colaboradores, :data_evento)";
 
 try {
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        ":nome" => $data["nome"] ?? null,
-        ":descricao" => $data["descricao"] ?? null,
-        ":local" => $data["local"] ?? null,
-        ":horario_inicio" => $data["horario_inicio"] ?? null,
-        ":horario_fim" => $data["horario_fim"] ?? null,
-        ":icone_url" => $data["icone_url"] ?? null,
-        ":capa_url" => $data["capa_url"] ?? null,
-        ":limite_participantes" => $data["limite_participantes"] ?? null,
-        ":turmas_permitidas" => pg_array_literal($data["turmas_permitidas"] ?? []),
-        ":colaboradores" => pg_array_literal($data["colaboradores"] ?? []),
-        ":data_evento" => $data["data_evento"] ?? null
+        ':nome' => $data['nome'] ?? null,
+        ':descricao' => $data['descricao'] ?? null,
+        ':local' => $data['local'] ?? null,
+        ':horario_inicio' => $data['horario_inicio'] ?? null,
+        ':horario_fim' => $data['horario_fim'] ?? null,
+        ':icone_url' => $data['icone_url'] ?? null,
+        ':capa_url' => $data['capa_url'] ?? null,
+        ':limite_participantes' => $data['limite_participantes'] ?? null,
+        ':turmas_permitidas' => isset($data['turmas_permitidas']) ? json_encode($data['turmas_permitidas']) : json_encode([]),
+        ':colaboradores' => isset($data['colaboradores']) ? json_encode($data['colaboradores']) : json_encode([]),
+        ':data_evento' => $data['data_evento'] ?? null
     ]);
 
     http_response_code(201);
@@ -67,3 +78,4 @@ try {
     http_response_code(500);
     echo json_encode(["erro" => "Erro ao inserir: " . $e->getMessage()]);
 }
+?>
