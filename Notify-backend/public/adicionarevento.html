@@ -69,14 +69,11 @@
     <label>Local:</label>
     <input type="text" id="local">
 
-    <label>Data do Evento:</label>
-    <input type="date" id="data_evento" required>
+    <label>Data e Hora de Início:</label>
+    <input type="datetime-local" id="data_hora_inicio" required>
 
-    <label>Horário de Início:</label>
-    <input type="time" id="horario_inicio">
-
-    <label>Horário de Fim:</label>
-    <input type="time" id="horario_fim">
+    <label>Data e Hora de Fim:</label>
+    <input type="datetime-local" id="data_hora_fim" required>
 
     <label>URL do Ícone:</label>
     <input type="text" id="icone_url">
@@ -106,9 +103,8 @@
         nome: document.getElementById("nome").value,
         descricao: document.getElementById("descricao").value,
         local: document.getElementById("local").value,
-        data_evento: document.getElementById("data_evento").value,
-        horario_inicio: document.getElementById("horario_inicio").value,
-        horario_fim: document.getElementById("horario_fim").value,
+        data_hora_inicio: document.getElementById("data_hora_inicio").value,
+        data_hora_fim: document.getElementById("data_hora_fim").value,
         icone_url: document.getElementById("icone_url").value,
         capa_url: document.getElementById("capa_url").value,
         limite_participantes: document.getElementById("limite_participantes").value,
