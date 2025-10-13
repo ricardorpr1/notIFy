@@ -1,52 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CalendÃ¡rio Interativo - notIFy</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>notIFy — Calendário</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
-
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-    }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f7f7f7; }
+    #calendarContainer { max-width:900px; margin:60px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+    #addEventBtn { position:fixed; top:20px; left:20px; background:#228b22; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; z-index:1100; }
+    #addEventBtn:hover { background:#1e7a1e; }
 
-    #calendar-container {
-      max-width: 900px;
-      margin: 60px auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
+    /* overlay + modal */
+    #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1200; align-items:center; justify-content:center; }
+    #modal { background:#fff; width:90%; max-width:760px; border-radius:10px; padding:16px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-height:90vh; overflow:auto; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .modal-title { margin:0; font-size:20px; }
+    .modal-close { background:transparent; border:none; font-size:24px; cursor:pointer; }
+    .modal-body { display:grid; grid-template-columns:1fr 320px; gap:16px; margin-top:12px; }
+    .modal-desc { white-space:pre-wrap; color:#333; }
+    .modal-image { width:100%; height:100%; object-fit:cover; border-radius:6px; display:block; max-height:360px; }
+    .modal-footer { margin-top:14px; display:flex; justify-content:flex-end; gap:8px; }
+    .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+    .btn-close { background:#6c757d; color:#fff; }
+    .btn-delete { background:#d9534f; color:#fff; }
 
-    #addEventBtn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background-color: #228b22;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: 0.3s;
-    }
-
-    #addEventBtn:hover {
-      background-color: #1e7a1e;
+    @media (max-width:780px) {
+      .modal-body { grid-template-columns:1fr; }
+      .modal-image { max-height:200px; }
     }
   </style>
 </head>
-
 <body>
-  <button id="addEventBtn" onclick="window.location.href='adicionarevento.html'">Adicionar Evento</button>
+  <button id="addEventBtn" onclick="location.href='adicionarevento.html'">Adicionar Evento</button>
 
-  <div id="calendar-container">
+  <div id="calendarContainer">
     <div id="calendar"></div>
+  </div>
+
+  <!-- Modal / Overlay -->
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Título</h3>
+        <button class="modal-close" id="modalClose" aria-label="Fechar">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div>
+          <p id="modalDescription" class="modal-desc">Descrição</p>
+          <p style="color:#666; margin-top:10px;"><strong>Local:</strong> <span id="modalLocation">—</span></p>
+        </div>
+        <div>
+          <img id="modalImage" class="modal-image" src="" alt="Capa do evento" style="display:none" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnClose" class="btn btn-close">Fechar</button>
+        <button id="btnDelete" class="btn btn-delete">Excluir evento</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -68,7 +82,7 @@
             if (!response.ok) throw new Error("Erro ao buscar eventos do servidor");
             const data = await response.json();
 
-            // Converter dados do banco em eventos do calendário
+            // Converter dados do banco em eventos do calendÃ¡rio
             const events = data.map(ev => ({
               id: ev.id,
               title: ev.title,
@@ -90,12 +104,52 @@
         eventClick: function (info) {
           const event = info.event.extendedProps;
           const title = info.event.title;
-          let details = `📍 Local: ${event.location || "Não informado"}\n📝 Descrição: ${event.description || "Sem descrição"}`;
+          let details = `ðŸ“ Local: ${event.location || "NÃ£o informado"}\nðŸ“ DescriÃ§Ã£o: ${event.description || "Sem descriÃ§Ã£o"}`;
           alert(`Evento: ${title}\n\n${details}`);
         }
       });
 
       calendar.render();
+
+      // carregar eventos
+      (async () => {
+        try {
+          const resp = await fetch('list_events.php');
+          const text = await resp.text();
+          const data = JSON.parse(text);
+
+          data.forEach(row => {
+            const ev = normalizeEvent(row);
+            if (ev.start) calendar.addEvent(ev);
+          });
+        } catch (err) {
+          console.error('Erro ao carregar eventos:', err);
+        }
+      })();
+
+      // exclusão
+      btnDelete.addEventListener('click', async () => {
+        if (!selectedEventId) return alert('Evento inválido.');
+        if (!confirm('Excluir este evento permanentemente?')) return;
+
+        try {
+          const res = await fetch('delete_event.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: selectedEventId })
+          });
+          const json = await res.json();
+          if (res.ok) {
+            const ev = calendar.getEventById(selectedEventId);
+            if (ev) ev.remove();
+            closeModal();
+            alert('Evento excluído.');
+          } else alert(json.erro || 'Erro ao excluir.');
+        } catch (err) {
+          console.error(err);
+          alert('Erro de comunicação com o servidor.');
+        }
+      });
     });
   </script>
 </body>

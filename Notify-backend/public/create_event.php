@@ -1,14 +1,8 @@
 <?php
-// create_event.php
-
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-<<<<<<< HEAD
-// Configuração do banco
-=======
 // Configuração do banco de dados
->>>>>>> 4c35dd5983ae29a36ad670acf2eef1719aed00dc
 $host = "127.0.0.1";
 $port = "3306";
 $dbname = "notify_db";
@@ -42,34 +36,33 @@ try {
     exit;
 }
 
-<<<<<<< HEAD
-=======
 // Lendo os dados enviados pelo fetch
->>>>>>> 4c35dd5983ae29a36ad670acf2eef1719aed00dc
 $data = json_decode(file_get_contents("php://input"), true);
 if (!$data) {
     http_response_code(400);
-    echo json_encode(["erro" => "Dados inválidos ou ausentes"]);
+    echo json_encode(["erro" => "Dados inválidos ou formato incorreto"]);
     exit;
 }
 
-$sql = "INSERT INTO eventos (nome, descricao, local, horario_inicio, horario_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores, data_evento)
-        VALUES (:nome, :descricao, :local, :horario_inicio, :horario_fim, :icone_url, :capa_url, :limite_participantes, :turmas_permitidas, :colaboradores, :data_evento)";
+// 🔐 Query atualizada com DATETIME
+$sql = "INSERT INTO eventos 
+(nome, descricao, local, data_hora_inicio, data_hora_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores)
+VALUES (:nome, :descricao, :local, :data_hora_inicio, :data_hora_fim, :icone_url, :capa_url, :limite_participantes, :turmas_permitidas, :colaboradores)";
+
+$stmt = $pdo->prepare($sql);
 
 try {
-    $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        ':nome' => $data['nome'] ?? null,
-        ':descricao' => $data['descricao'] ?? null,
-        ':local' => $data['local'] ?? null,
-        ':horario_inicio' => $data['horario_inicio'] ?? null,
-        ':horario_fim' => $data['horario_fim'] ?? null,
-        ':icone_url' => $data['icone_url'] ?? null,
-        ':capa_url' => $data['capa_url'] ?? null,
-        ':limite_participantes' => $data['limite_participantes'] ?? null,
-        ':turmas_permitidas' => isset($data['turmas_permitidas']) ? json_encode($data['turmas_permitidas']) : json_encode([]),
-        ':colaboradores' => isset($data['colaboradores']) ? json_encode($data['colaboradores']) : json_encode([]),
-        ':data_evento' => $data['data_evento'] ?? null
+        ":nome" => $data["nome"] ?? null,
+        ":descricao" => $data["descricao"] ?? null,
+        ":local" => $data["local"] ?? null,
+        ":data_hora_inicio" => $data["data_hora_inicio"] ?? null,
+        ":data_hora_fim" => $data["data_hora_fim"] ?? null,
+        ":icone_url" => $data["icone_url"] ?? null,
+        ":capa_url" => $data["capa_url"] ?? null,
+        ":limite_participantes" => $data["limite_participantes"] ?? null,
+        ":turmas_permitidas" => isset($data["turmas_permitidas"]) ? json_encode($data["turmas_permitidas"]) : json_encode([]),
+        ":colaboradores" => isset($data["colaboradores"]) ? json_encode($data["colaboradores"]) : json_encode([])
     ]);
 
     http_response_code(201);

@@ -1,5 +1,6 @@
 <?php
 // list_events.php
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -11,30 +12,41 @@ $user = "tcc_notify";
 $password = "108Xk:C";
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $user, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(["erro" => "Erro de conexão: " . $e->getMessage()]);
+    exit;
+}
 
-    // Busca todos os eventos
-    $sql = "SELECT id, nome, descricao, local, horario_inicio, horario_fim, capa_url, data_evento FROM eventos";
+try {
+    $sql = "SELECT id, nome, descricao, local, data_hora_inicio, data_hora_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores 
+            FROM eventos";
     $stmt = $pdo->query($sql);
     $eventos = [];
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        // Monta o formato aceito pelo FullCalendar
-        $start = $row['data_evento'] . 'T' . $row['horario_inicio'];
-        $end = $row['data_evento'] . 'T' . $row['horario_fim'];
         $eventos[] = [
             "id" => $row["id"],
             "title" => $row["nome"],
-            "start" => $start,
-            "end" => $end,
-            "description" => $row["descricao"],
-            "location" => $row["local"],
-            "image" => $row["capa_url"]
+            "start" => $row["data_hora_inicio"],
+            "end" => $row["data_hora_fim"],
+            "extendedProps" => [
+                "descricao" => $row["descricao"],
+                "local" => $row["local"],
+                "icone_url" => $row["icone_url"],
+                "capa_url" => $row["capa_url"],
+                "limite_participantes" => $row["limite_participantes"],
+                "turmas_permitidas" => $row["turmas_permitidas"],
+                "colaboradores" => $row["colaboradores"]
+            ]
         ];
     }
 
-    echo json_encode($eventos);
+    echo json_encode($eventos, JSON_UNESCAPED_UNICODE);
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["erro" => "Erro ao buscar eventos: " . $e->getMessage()]);
