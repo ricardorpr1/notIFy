@@ -71,9 +71,22 @@
     .btn-login:hover {
       background-color: #ccc;
     }
+    .icon {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <img src="icon_notify.png" 
+  alt="Calendário" 
+  class="icon" 
+  onclick="window.location.href='telainicio.html'">
+
 
   <div class="cadastro-container">
     <h2>Cadastro</h2>
@@ -100,7 +113,7 @@
       <input type="text" id="ra" required>
 
       <button type="submit" class="btn-cadastrar">Cadastrar</button>
-      <button type="button" class="btn-login" onclick="window.location.href='index.html'">Já tenho uma conta</button>
+      <button type="button" class="btn-login" onclick="window.location.href='telalogin.html'">Já tenho uma conta</button>
     </form>
   </div>
 

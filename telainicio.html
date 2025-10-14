@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NotIFy</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .fundo {
+      background-color: #ddffda; /* verde claro */
+      padding: 60px 100px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.25); /* sombra suave */
+      text-align: center;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .fundo:hover {
+      box-shadow: 0px 12px 30px rgba(0, 0, 0, 0.35); /* efeito ao passar o mouse */
+    }
+
+    .icon {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 60px;
+      height: 60px;
+    }
+
+    h1 {
+      font-size: 80px;
+      margin-bottom: 60px;
+      color: #045c3f;
+      font-weight: 700;
+    }
+
+    h1 span {
+      color: #c00000;
+    }
+
+    .btn {
+      background-color: #045c3f;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 15px 80px;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn1 {
+      background-color: #045c3f;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 15px 100px;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #05774f;
+    }
+    .btn1:hover {
+      background-color: #05774f;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="fundo">
+  <h1>Not<span>IF</span>y</h1>
+
+  <div><button class="btn1"onclick="window.location.href='telalogin.html'">    Login</button></div>
+  <div><button class="btn" onclick="window.location.href='telacadastro.html'" >Cadastrar</button></div>
+
+</body>
+</html>
