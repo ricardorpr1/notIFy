@@ -93,7 +93,7 @@
     <button type="submit">Criar Evento</button>
   </form>
 
-  <a href="index.html" class="voltar">← Voltar para o calendário</a>
+  <a href="index.php" class="voltar">← Voltar para o calendário</a>
 
   <script>
     document.getElementById("eventoForm").addEventListener("submit", async (e) => {
@@ -123,7 +123,7 @@
 
         if (response.ok) {
           alert(result.mensagem || "Evento criado com sucesso!");
-          window.location.href = "index.html";
+          window.location.href = "index.php";
         } else {
           alert(result.erro || "Erro ao criar o evento.");
         }
