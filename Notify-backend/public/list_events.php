@@ -1,54 +1,77 @@
 <?php
-// list_events.php
+// login.php
+session_start();
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
+// Só aceita POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: telalogin.html');
+    exit;
+}
 
-// Configuração do banco
-$host = "127.0.0.1";
-$port = "3306";
+// Configurações do banco (altere se necessário)
+$host   = "127.0.0.1";
+$port   = "3306";
 $dbname = "notify_db";
-$user = "tcc_notify";
-$password = "108Xk:C";
+$dbuser = "tcc_notify";
+$dbpass = "108Xk:C";
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $user, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    $pdo = new PDO("mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4", $dbuser, $dbpass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES => false
     ]);
 } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["erro" => "Erro de conexão: " . $e->getMessage()]);
+    // Falha na conexão
+    header('Location: telalogin.html?error=server');
+    exit;
+}
+
+// Pega dados do form
+$email = isset($_POST['email']) ? trim($_POST['email']) : '';
+$senha = isset($_POST['senha']) ? $_POST['senha'] : '';
+
+if ($email === '' || $senha === '') {
+    header('Location: telalogin.html?error=empty');
     exit;
 }
 
 try {
-    $sql = "SELECT id, nome, descricao, local, data_hora_inicio, data_hora_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores 
-            FROM eventos";
-    $stmt = $pdo->query($sql);
-    $eventos = [];
+    // Buscar usuário pelo email (campo email é UNIQUE na tabela)
+    $stmt = $pdo->prepare("SELECT id, nome, email, senha FROM usuarios WHERE email = :email LIMIT 1");
+    $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $eventos[] = [
-            "id" => $row["id"],
-            "title" => $row["nome"],
-            "start" => $row["data_hora_inicio"],
-            "end" => $row["data_hora_fim"],
-            "extendedProps" => [
-                "descricao" => $row["descricao"],
-                "local" => $row["local"],
-                "icone_url" => $row["icone_url"],
-                "capa_url" => $row["capa_url"],
-                "limite_participantes" => $row["limite_participantes"],
-                "turmas_permitidas" => $row["turmas_permitidas"],
-                "colaboradores" => $row["colaboradores"]
-            ]
-        ];
+    if (!$user) {
+        // não encontrou
+        header('Location: telalogin.html?error=notfound');
+        exit;
     }
 
-    echo json_encode($eventos, JSON_UNESCAPED_UNICODE);
+    $hash = $user['senha'] ?? '';
+
+    if (!is_string($hash) || $hash === '') {
+        header('Location: telalogin.html?error=server');
+        exit;
+    }
+
+    // Verifica senha
+    if (!password_verify($senha, $hash)) {
+        header('Location: telalogin.html?error=badpass');
+        exit;
+    }
+
+    // Autenticação bem-sucedida: criar sessão
+    session_regenerate_id(true);
+    $_SESSION['usuario_id'] = $user['id'];
+    $_SESSION['usuario_nome'] = $user['nome'] ?? '';
+    $_SESSION['usuario_email'] = $user['email'];
+
+    // Redireciona para index.html (conforme pedido)
+    header('Location: index.html');
+    exit;
 
 } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["erro" => "Erro ao buscar eventos: " . $e->getMessage()]);
+    header('Location: telalogin.html?error=server');
+    exit;
 }
-?>

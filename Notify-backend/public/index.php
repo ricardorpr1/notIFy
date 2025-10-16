@@ -1,3 +1,11 @@
+<?php
+// index.php — proteção de sessão
+session_start();
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: telainicio.html');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -10,6 +18,11 @@
     #calendarContainer { max-width:900px; margin:60px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
     #addEventBtn { position:fixed; top:20px; left:20px; background:#228b22; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; z-index:1100; }
     #addEventBtn:hover { background:#1e7a1e; }
+
+    /* logout / user info */
+    #userInfo { position:fixed; top:18px; right:20px; z-index:1100; display:flex; gap:12px; align-items:center; }
+    #userName { color:#045c3f; font-weight:600; }
+    #logoutBtn { background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
 
     /* overlay + modal */
     #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1200; align-items:center; justify-content:center; }
@@ -33,6 +46,11 @@
 </head>
 <body>
   <button id="addEventBtn" onclick="location.href='adicionarevento.html'">Adicionar Evento</button>
+
+  <div id="userInfo">
+    <div id="userName"><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'Usuário') ?></div>
+    <button id="logoutBtn">Sair</button>
+  </div>
 
   <div id="calendarContainer">
     <div id="calendar"></div>
@@ -65,47 +83,62 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      const calendarEl = document.getElementById("calendar");
+    let calendar;
+    let selectedEventId = null;
 
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "pt-br",
-        headerToolbar: {
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay"
-        },
-        events: async (fetchInfo, successCallback, failureCallback) => {
-          try {
-            const response = await fetch("list_events.php");
-            if (!response.ok) throw new Error("Erro ao buscar eventos do servidor");
-            const data = await response.json();
+    function toIsoString(mysqlDateTime) { if (!mysqlDateTime) return null; return mysqlDateTime.replace(' ', 'T'); }
 
-            // Converter dados do banco em eventos do calendÃ¡rio
-            const events = data.map(ev => ({
-              id: ev.id,
-              title: ev.title,
-              start: ev.start,
-              end: ev.end,
-              extendedProps: {
-                description: ev.description,
-                location: ev.location,
-                image: ev.image
-              }
-            }));
+    function normalizeEvent(row) {
+      const id = row.id ?? null;
+      const title = row.nome ?? row.title ?? 'Sem título';
+      const start = toIsoString(row.data_hora_inicio ?? row.start);
+      const end = toIsoString(row.data_hora_fim ?? row.end);
+      const description = row.descricao ?? row.description ?? '';
+      const location = row.local ?? row.location ?? '';
+      const image = row.capa_url ?? row.image ?? null;
+      return { id, title, start, end, extendedProps: { description, location, image } };
+    }
 
-            successCallback(events);
-          } catch (error) {
-            console.error("Erro:", error);
-            failureCallback(error);
-          }
-        },
+    document.addEventListener('DOMContentLoaded', function () {
+      const calendarEl = document.getElementById('calendar');
+      const overlay = document.getElementById('overlay');
+      const modalClose = document.getElementById('modalClose');
+      const btnClose = document.getElementById('btnClose');
+      const btnDelete = document.getElementById('btnDelete');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalDescription = document.getElementById('modalDescription');
+      const modalLocation = document.getElementById('modalLocation');
+      const modalImage = document.getElementById('modalImage');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      function openModal() { overlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+      function closeModal() { overlay.style.display = 'none'; document.body.style.overflow = ''; selectedEventId = null; }
+
+      modalClose.addEventListener('click', closeModal);
+      btnClose.addEventListener('click', closeModal);
+      overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
         eventClick: function (info) {
-          const event = info.event.extendedProps;
-          const title = info.event.title;
-          let details = `ðŸ“ Local: ${event.location || "NÃ£o informado"}\nðŸ“ DescriÃ§Ã£o: ${event.description || "Sem descriÃ§Ã£o"}`;
-          alert(`Evento: ${title}\n\n${details}`);
+          const ev = info.event;
+          const props = ev.extendedProps || {};
+          selectedEventId = String(ev.id || '');
+
+          modalTitle.textContent = ev.title || 'Sem título';
+          modalDescription.textContent = props.description || 'Sem descrição.';
+          modalLocation.textContent = props.location || 'Não informado';
+
+          if (props.image) {
+            modalImage.src = props.image;
+            modalImage.style.display = 'block';
+          } else {
+            modalImage.style.display = 'none';
+          }
+
+          openModal();
         }
       });
 
@@ -150,6 +183,24 @@
           alert('Erro de comunicação com o servidor.');
         }
       });
+
+      // logout (faz POST para logout.php e redireciona)
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch('logout.php', { method: 'POST' });
+          if (res.ok) {
+            // opcional: ler json para mensagem
+            // const j = await res.json();
+            window.location.href = 'telainicio.html';
+          } else {
+            alert('Falha ao sair. Tente novamente.');
+          }
+        } catch (err) {
+          console.error('Erro no logout:', err);
+          alert('Erro ao sair. Veja console.');
+        }
+      });
+
     });
   </script>
 </body>
