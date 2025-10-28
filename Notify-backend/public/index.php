@@ -52,6 +52,12 @@ $currentRole = intval($_SESSION['role'] ?? 0);
   <?php if ($currentRole >= 1): ?>
     <button id="addEventBtn" onclick="location.href='adicionarevento.html'">Adicionar Evento</button>
   <?php endif; ?>
+  <?php if ($currentRole === 2): ?>
+    <button id="permissionsBtn" style="position:fixed; top:20px; left:140px; background:#6f42c1; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; z-index:1100;">
+      Permissões
+    </button>
+  <?php endif; ?>
+
 
   <div id="userInfo">
     <div id="userName"><?= htmlspecialchars($currentUserName) ?></div>
@@ -127,6 +133,13 @@ $currentRole = intval($_SESSION['role'] ?? 0);
       const modalImage = document.getElementById('modalImage');
       const modalCount = document.getElementById('modalCount');
       const logoutBtn = document.getElementById('logoutBtn');
+      const permissionsBtn = document.getElementById('permissionsBtn');
+      if (permissionsBtn) {
+        permissionsBtn.addEventListener('click', () => {
+          window.location.href = 'permissions.php';
+        });
+      }
+
 
       function openModal() { overlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
       function closeModal() { overlay.style.display = 'none'; document.body.style.overflow = ''; selectedEvent = null; }
@@ -142,6 +155,7 @@ $currentRole = intval($_SESSION['role'] ?? 0);
         eventClick: function (info) {
           selectedEvent = info.event;
           const props = selectedEvent.extendedProps || {};
+
           modalTitle.textContent = selectedEvent.title || 'Sem título';
           modalDescription.textContent = props.description || 'Sem descrição.';
           modalLocation.textContent = props.location || 'Não informado';
@@ -149,9 +163,16 @@ $currentRole = intval($_SESSION['role'] ?? 0);
           const inscricoes = Array.isArray(props.inscricoes) ? props.inscricoes.map(x => String(x)) : [];
           modalCount.textContent = inscricoes.length;
 
-          // regra de exibição dos botões por role
-          // se role == 0 (USER) => mostrar apenas inscrever + fechar
-          // se role >= 1 (ORGANIZADOR ou DEV) => mostrar inscrever, exportar, excluir, fechar
+          // obter created_by do evento (pode estar em extendedProps.created_by ou em top-level)
+          // atenção: created_by pode ser null
+          const createdBy = (props.created_by !== undefined && props.created_by !== null)
+            ? String(props.created_by)
+            : (selectedEvent._def && selectedEvent._def.extendedProps && selectedEvent._def.extendedProps.created_by !== undefined ? String(selectedEvent._def.extendedProps.created_by) : null);
+
+          // Decidir exibição dos botões com base em currentRole e createdBy:
+          // DEV (2) -> sempre vê exportar/excluir
+          // ORGANIZADOR (1) -> só vê exportar/excluir se for o criador do evento (createdBy == currentUserId)
+          // USER (0) -> não vê exportar/excluir
           if (currentUserId > 0) {
             inscribeBtn.style.display = 'inline-block';
             const isInscrito = inscricoes.includes(String(currentUserId));
@@ -161,8 +182,13 @@ $currentRole = intval($_SESSION['role'] ?? 0);
             inscribeBtn.style.display = 'none';
           }
 
-          if (currentRole >= 1) {
-            // organizador/dev: pode exportar e excluir (server deve validar permissões)
+          const isDev = (currentRole === 2);
+          const isCreator = (createdBy !== null && String(createdBy) === String(currentUserId));
+          if (isDev) {
+            btnExport.style.display = 'inline-block';
+            btnDelete.style.display = 'inline-block';
+          } else if (currentRole === 1 && isCreator) {
+            // organizador e é criador
             btnExport.style.display = 'inline-block';
             btnDelete.style.display = 'inline-block';
           } else {
@@ -179,6 +205,7 @@ $currentRole = intval($_SESSION['role'] ?? 0);
 
           openModal();
         }
+
       });
 
       calendar.render();

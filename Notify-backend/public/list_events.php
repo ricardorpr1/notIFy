@@ -1,5 +1,5 @@
 <?php
-// list_events.php - retorna eventos com inscricoes decodificadas
+// list_events.php - retorna eventos com created_by e inscrições
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
@@ -7,7 +7,7 @@ ini_set('error_log', __DIR__ . '/php_errors.log');
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 
-// Config DB - ajuste conforme seu ambiente
+// DB config
 $host = "127.0.0.1";
 $port = "3306";
 $dbname = "notify_db";
@@ -32,26 +32,23 @@ try {
 }
 
 try {
-    $sql = "SELECT id, nome, descricao, local, data_hora_inicio, data_hora_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores, inscricoes
+    // tentar selecionar created_by; se não existir, o fallback tratará
+    $sql = "SELECT id, nome, descricao, local, data_hora_inicio, data_hora_fim, icone_url, capa_url, limite_participantes, turmas_permitidas, colaboradores, inscricoes, created_by
             FROM eventos
             ORDER BY data_hora_inicio ASC";
     $stmt = $pdo->query($sql);
 
     $events = [];
     while ($row = $stmt->fetch()) {
-        // normalizar inscricoes (JSON -> array de ints)
+        // inscricoes
         $inscricoes = [];
         if (!empty($row['inscricoes'])) {
             $tmp = json_decode($row['inscricoes'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) {
-                $inscricoes = array_values($tmp);
-            } else {
-                // fallback: tentar split (se for string "1,2,3")
-                $inscricoes = array_filter(array_map('trim', explode(',', $row['inscricoes'])));
-            }
+            if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $inscricoes = array_values($tmp);
+            else $inscricoes = array_filter(array_map('trim', explode(',', $row['inscricoes'])));
         }
 
-        // turmas/colaboradores (mantemos como antes)
+        // turmas / colaboradores (decodifica JSON ou CSV)
         $turmas = [];
         if (!empty($row['turmas_permitidas'])) {
             $tmp = json_decode($row['turmas_permitidas'], true);
@@ -64,6 +61,9 @@ try {
             if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $cols = $tmp;
             else $cols = array_map('trim', explode(',', $row['colaboradores']));
         }
+
+        // created_by (pode ser NULL se coluna existir ou se não)
+        $createdBy = array_key_exists('created_by', $row) ? ($row['created_by'] !== null ? intval($row['created_by']) : null) : null;
 
         $evt = [
             "id" => (string)$row['id'],
@@ -83,6 +83,7 @@ try {
             "turmas_permitidas" => $turmas,
             "colaboradores" => $cols,
             "inscricoes" => $inscricoes,
+            "created_by" => $createdBy,
             "extendedProps" => [
                 "descricao" => $row['descricao'],
                 "local" => $row['local'],
@@ -91,7 +92,8 @@ try {
                 "limite_participantes" => $row['limite_participantes'],
                 "turmas_permitidas" => $turmas,
                 "colaboradores" => $cols,
-                "inscricoes" => $inscricoes
+                "inscricoes" => $inscricoes,
+                "created_by" => $createdBy
             ]
         ];
 
