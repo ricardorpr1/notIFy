@@ -1,12 +1,7 @@
 <?php
-// perfil_editar.php
+// perfil_editar.php — edição de perfil com upload + thumb 200x200
 session_start();
-
-// se não autenticado, redireciona para tela inicial
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: telainicio.html');
-    exit;
-}
+if (!isset($_SESSION['usuario_id'])) { header('Location: telainicio.html'); exit; }
 
 $DB_HOST = "127.0.0.1";
 $DB_PORT = "3306";
@@ -14,7 +9,6 @@ $DB_NAME = "notify_db";
 $DB_USER = "tcc_notify";
 $DB_PASS = "108Xk:C";
 
-// upload config (mesma lógica do register_user.php)
 $UPLOAD_DIR = __DIR__ . '/uploads';
 $UPLOAD_WEBPATH = 'uploads';
 $MAX_FILE_BYTES = 3 * 1024 * 1024;
@@ -24,139 +18,144 @@ $ALLOWED_MIMES = [
     'image/png'  => '.png',
     'image/webp' => '.webp'
 ];
+$THUMB_SIZE = 200;
 
 if (!is_dir($UPLOAD_DIR)) @mkdir($UPLOAD_DIR, 0755, true);
 
-function gen_filename($ext = '.jpg') {
-    return bin2hex(random_bytes(10)) . $ext;
+function gen_filename($ext = '.jpg') { return bin2hex(random_bytes(10)) . $ext; }
+function safeTrim($v) { return is_string($v) ? trim($v) : $v; }
+function create_image_from_file($path) {
+    $data = @file_get_contents($path);
+    if ($data === false) return false;
+    return @imagecreatefromstring($data);
+}
+function save_image_to_file($img, $path) {
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    if ($ext === 'jpg' || $ext === 'jpeg') return imagejpeg($img, $path, 85);
+    elseif ($ext === 'png') return imagepng($img, $path, 6);
+    elseif ($ext === 'webp' && function_exists('imagewebp')) return imagewebp($img, $path, 80);
+    else return imagejpeg($img, $path, 85);
+}
+function create_center_crop_thumbnail($srcPath, $destPath, $thumbSize) {
+    $srcImg = create_image_from_file($srcPath);
+    if (!$srcImg) return false;
+    $w = imagesx($srcImg); $h = imagesy($srcImg);
+    if ($w <= 0 || $h <= 0) { imagedestroy($srcImg); return false; }
+    if ($w > $h) { $s = $h; $srcX = intval(($w - $h) / 2); $srcY = 0; }
+    else { $s = $w; $srcX = 0; $srcY = intval(($h - $w) / 2); }
+    $thumb = imagecreatetruecolor($thumbSize, $thumbSize);
+    imagealphablending($thumb, false); imagesavealpha($thumb, true);
+    $transparent = imagecolorallocatealpha($thumb, 0, 0, 0, 127); imagefill($thumb, 0, 0, $transparent);
+    $ok = imagecopyresampled($thumb, $srcImg, 0, 0, $srcX, $srcY, $thumbSize, $thumbSize, $s, $s);
+    if (!$ok) { imagedestroy($srcImg); imagedestroy($thumb); return false; }
+    $res = save_image_to_file($thumb, $destPath);
+    imagedestroy($srcImg); imagedestroy($thumb);
+    return $res;
 }
 
-function safeTrim($v) { return is_string($v) ? trim($v) : $v; }
-
-$erro = '';
-$mensagem = '';
+// connect DB
+try {
+    $pdo = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4",
+                   $DB_USER, $DB_PASS, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
+} catch (PDOException $e) { die('Erro ao conectar ao banco.'); }
 
 $userid = intval($_SESSION['usuario_id']);
 
-// conectar DB
-try {
-    $pdo = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4",
-                   $DB_USER, $DB_PASS, [
-                       PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                       PDO::ATTR_EMULATE_PREPARES => false
-                   ]);
-} catch (PDOException $e) {
-    // não expor detalhes em produção
-    die("Erro ao conectar ao banco de dados.");
-}
-
-// buscar dados atuais do usuário
+// fetch user
 try {
     $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = :id LIMIT 1");
     $stmt->execute([':id' => $userid]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$user) {
-        session_destroy();
-        header('Location: telainicio.html');
-        exit;
-    }
-} catch (PDOException $e) {
-    die("Erro ao buscar usuário.");
-}
+    $user = $stmt->fetch();
+    if (!$user) { session_destroy(); header('Location: telainicio.html'); exit; }
+} catch (PDOException $e) { die('Erro ao buscar usuário.'); }
 
-// valores iniciais para popular o formulário
 $nome = $user['nome'] ?? '';
 $email = $user['email'] ?? '';
 $telefone = $user['telefone'] ?? '';
 $cpf = $user['cpf'] ?? '';
-$data_nascimento = isset($user['data_nascimento']) ? $user['data_nascimento'] : '';
+$data_nascimento = $user['data_nascimento'] ?? '';
 $registro_academico = $user['registro_academico'] ?? '';
 $foto_url = $user['foto_url'] ?? '';
 $naoAlunoChecked = ($registro_academico === null || $registro_academico === '');
 
+$erro = ''; $mensagem = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ler campos
     $nome_post = safeTrim($_POST['nome'] ?? '');
     $email_post = safeTrim($_POST['email'] ?? '');
     $telefone_post = safeTrim($_POST['telefone'] ?? '');
     $cpf_post = safeTrim($_POST['cpf'] ?? '');
     $data_nascimento_post = safeTrim($_POST['nascimento'] ?? '');
-    $naoAluno = isset($_POST['nao_aluno']) && ($_POST['nao_aluno'] === '1' || $_POST['nao_aluno'] === 'on');
+    $naoAluno = isset($_POST['nao_aluno']) && ($_POST['nao_aluno']==='1' || $_POST['nao_aluno']==='on');
     $ra_post = $naoAluno ? null : safeTrim($_POST['ra'] ?? '');
     $nova_senha = $_POST['senha'] ?? '';
 
-    // validações básicas
     if ($nome_post === '' || $email_post === '' || $cpf_post === '' || $data_nascimento_post === '') {
-        $erro = 'Preencha os campos obrigatórios (nome, e-mail, CPF e data de nascimento).';
+        $erro = 'Preencha nome, e-mail, CPF e data de nascimento.';
     } elseif (!filter_var($email_post, FILTER_VALIDATE_EMAIL)) {
         $erro = 'E-mail inválido.';
     } else {
-        // normaliza cpf
         $cpf_digits = preg_replace('/\D+/', '', $cpf_post);
-        if (strlen($cpf_digits) !== 11) {
-            $erro = 'CPF inválido (deve conter 11 dígitos).';
-        }
+        if (strlen($cpf_digits) !== 11) $erro = 'CPF inválido.';
     }
 
-    // processar upload de foto (se houver e sem erros previos)
-    $new_foto_url = $foto_url; // por padrão manter atual
-    if ($erro === '') {
-        if (isset($_FILES['foto']) && is_array($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $fErr = $_FILES['foto']['error'];
-            if ($fErr !== UPLOAD_ERR_OK) {
-                $erro = 'Erro no upload da imagem (código ' . intval($fErr) . ').';
-            } else {
-                $tmpPath = $_FILES['foto']['tmp_name'];
-                $fSize = filesize($tmpPath);
-                $fType = mime_content_type($tmpPath) ?: $_FILES['foto']['type'];
-
-                if ($fSize > $MAX_FILE_BYTES) {
-                    $erro = 'Imagem muito grande. Máx ' . ($MAX_FILE_BYTES / (1024*1024)) . ' MB.';
-                } elseif (!array_key_exists($fType, $ALLOWED_MIMES)) {
-                    $erro = 'Tipo de arquivo não permitido. Use JPG, PNG ou WEBP.';
-                } else {
-                    $ext = $ALLOWED_MIMES[$fType];
-                    $fname = gen_filename($ext);
-                    $dest = $UPLOAD_DIR . '/' . $fname;
-                    if (!move_uploaded_file($tmpPath, $dest)) {
-                        $erro = 'Falha ao salvar a imagem enviada.';
-                    } else {
-                        @chmod($dest, 0644);
-                        $new_foto_url = $UPLOAD_WEBPATH . '/' . $fname;
-                    }
+    // handle upload if any
+    $new_foto_web = $foto_url;
+    if ($erro === '' && isset($_FILES['foto']) && is_array($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $fErr = $_FILES['foto']['error'];
+        if ($fErr !== UPLOAD_ERR_OK) $erro = 'Erro no upload da imagem.';
+        else {
+            $tmpPath = $_FILES['foto']['tmp_name'];
+            $fSize = filesize($tmpPath);
+            $fMime = mime_content_type($tmpPath) ?: $_FILES['foto']['type'];
+            if ($fSize > $MAX_FILE_BYTES) $erro = 'Imagem muito grande.';
+            elseif (!array_key_exists($fMime, $ALLOWED_MIMES)) $erro = 'Tipo não permitido.';
+            else {
+                $ext = $ALLOWED_MIMES[$fMime];
+                $origName = gen_filename($ext);
+                $thumbName = 'thumb_' . $origName;
+                $origDest = $UPLOAD_DIR . '/' . $origName;
+                $thumbDest = $UPLOAD_DIR . '/' . $thumbName;
+                if (!move_uploaded_file($tmpPath, $origDest)) $erro = 'Falha ao salvar imagem.';
+                else {
+                    @chmod($origDest, 0644);
+                    $okthumb = create_center_crop_thumbnail($origDest, $thumbDest, $THUMB_SIZE);
+                    if (!$okthumb) $erro = 'Falha ao gerar miniatura.';
+                    else { @chmod($thumbDest, 0644); $new_foto_web = $UPLOAD_WEBPATH . '/' . $thumbName; }
                 }
             }
         }
     }
 
-    // se nenhum erro, tentar atualizar DB
     if ($erro === '') {
         try {
-            // validar unicidade para email, cpf e ra (se alterados)
-            // checar email
+            // uniqueness checks
             if ($email_post !== $email) {
                 $s = $pdo->prepare("SELECT id FROM usuarios WHERE email = :email AND id <> :id LIMIT 1");
-                $s->execute([':email' => $email_post, ':id' => $userid]);
-                if ($s->fetch()) { $erro = 'E-mail já está em uso por outro usuário.'; }
+                $s->execute([':email'=>$email_post, ':id'=>$userid]); if ($s->fetch()) $erro = 'E-mail já em uso.';
             }
-            // checar cpf
             if ($erro === '' && $cpf_digits !== $cpf) {
                 $s = $pdo->prepare("SELECT id FROM usuarios WHERE cpf = :cpf AND id <> :id LIMIT 1");
-                $s->execute([':cpf' => $cpf_digits, ':id' => $userid]);
-                if ($s->fetch()) { $erro = 'CPF já cadastrado por outro usuário.'; }
+                $s->execute([':cpf'=>$cpf_digits, ':id'=>$userid]); if ($s->fetch()) $erro = 'CPF já cadastrado.';
             }
-            // checar ra (se usado)
             if ($erro === '' && $ra_post !== null && $ra_post !== '') {
                 if ($ra_post !== $registro_academico) {
                     $s = $pdo->prepare("SELECT id FROM usuarios WHERE registro_academico = :ra AND id <> :id LIMIT 1");
-                    $s->execute([':ra' => $ra_post, ':id' => $userid]);
-                    if ($s->fetch()) { $erro = 'RA já cadastrado por outro usuário.'; }
+                    $s->execute([':ra'=>$ra_post, ':id'=>$userid]); if ($s->fetch()) $erro = 'RA já em uso.';
                 }
             }
 
             if ($erro === '') {
-                // construir SQL dinâmico para atualizar somente os campos necessários
+                $params = [
+                    ':id' => $userid,
+                    ':nome' => $nome_post,
+                    ':email' => $email_post,
+                    ':telefone' => $telefone_post ?: null,
+                    ':cpf' => $cpf_digits,
+                    ':data_nascimento' => $data_nascimento_post ?: null,
+                    ':registro_academico' => ($ra_post === null || $ra_post === '') ? null : $ra_post,
+                    ':foto_url' => $new_foto_web ?: null
+                ];
                 $updateFields = [
                     'nome = :nome',
                     'email = :email',
@@ -166,41 +165,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'registro_academico = :registro_academico',
                     'foto_url = :foto_url'
                 ];
-                $params = [
-                    ':id' => $userid,
-                    ':nome' => $nome_post,
-                    ':email' => $email_post,
-                    ':telefone' => $telefone_post ?: null,
-                    ':cpf' => $cpf_digits,
-                    ':data_nascimento' => $data_nascimento_post ?: null,
-                    ':registro_academico' => ($ra_post === null || $ra_post === '') ? null : $ra_post,
-                    ':foto_url' => $new_foto_url ?: null
-                ];
-
-                // senha: se foi fornecida uma nova senha, adicionar ao update
                 if ($nova_senha !== null && $nova_senha !== '') {
                     $senha_hash = password_hash($nova_senha, PASSWORD_DEFAULT);
                     $updateFields[] = 'senha = :senha';
                     $params[':senha'] = $senha_hash;
                 }
-
-                $sqlUpdate = "UPDATE usuarios SET " . implode(', ', $updateFields) . " WHERE id = :id";
-                $stmt = $pdo->prepare($sqlUpdate);
+                $sql = "UPDATE usuarios SET " . implode(', ', $updateFields) . " WHERE id = :id";
+                $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
 
-                // atualizar variáveis locais e sessão foto/nome se necessário
                 $mensagem = 'Perfil atualizado com sucesso.';
-                // atualizar variáveis para preencher o formulário novamente
-                $nome = $nome_post;
-                $email = $email_post;
-                $telefone = $telefone_post;
-                $cpf = $cpf_digits;
-                $data_nascimento = $data_nascimento_post;
+                // refresh local variables
+                $nome = $nome_post; $email = $email_post; $telefone = $telefone_post;
+                $cpf = $cpf_digits; $data_nascimento = $data_nascimento_post;
                 $registro_academico = ($ra_post === null || $ra_post === '') ? null : $ra_post;
-                $foto_url = $new_foto_url;
+                $foto_url = $new_foto_web;
                 $naoAlunoChecked = ($registro_academico === null || $registro_academico === '');
-
-                // atualizar sessão (nome/foto) caso queira refletir imediatamente
                 $_SESSION['usuario_nome'] = $nome;
                 if (!empty($foto_url)) $_SESSION['foto_url'] = $foto_url;
             }
@@ -210,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// helper para exibir valor seguro
+// helper
 function esc($v) { return htmlspecialchars($v ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>
 <!DOCTYPE html>
@@ -241,12 +221,8 @@ function esc($v) { return htmlspecialchars($v ?? '', ENT_QUOTES | ENT_SUBSTITUTE
   <div class="card" role="main">
     <h2>Editar perfil</h2>
 
-    <?php if ($mensagem): ?>
-      <div class="msg sucesso"><?= esc($mensagem) ?></div>
-    <?php endif; ?>
-    <?php if ($erro): ?>
-      <div class="msg erro"><?= esc($erro) ?></div>
-    <?php endif; ?>
+    <?php if (!empty($mensagem)): ?><div class="msg sucesso"><?= esc($mensagem) ?></div><?php endif; ?>
+    <?php if (!empty($erro)): ?><div class="msg erro"><?= esc($erro) ?></div><?php endif; ?>
 
     <form method="post" action="perfil_editar.php" enctype="multipart/form-data" novalidate>
       <label for="nome">Nome</label>
@@ -307,7 +283,6 @@ function esc($v) { return htmlspecialchars($v ?? '', ENT_QUOTES | ENT_SUBSTITUTE
   naoAluno.addEventListener('change', updateRA);
   updateRA();
 
-  // normalize CPF before submit
   document.querySelector('form').addEventListener('submit', function(e){
     const cpfEl = document.getElementById('cpf');
     if (cpfEl) cpfEl.value = cpfEl.value.replace(/\D/g,'');
