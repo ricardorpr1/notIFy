@@ -29,6 +29,20 @@ try {
     respond(500, ["erro" => "Erro de conexão com o banco."]);
 }
 
+// Helper para decodificar JSON (robusto)
+function decodeJsonArray($jsonString) {
+    if (empty($jsonString)) return [];
+    if (is_array($jsonString)) return array_values($jsonString); // Já pode ser um array
+    
+    $decoded = json_decode($jsonString, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+        return array_values($decoded);
+    }
+    
+    // Fallback para CSV (se não for JSON válido)
+    return array_filter(array_map('trim', explode(',', (string)$jsonString)));
+}
+
 try {
     // fetch all columns to be resilient to schema changes
     $stmt = $pdo->query("SELECT * FROM eventos ORDER BY data_hora_inicio ASC, id ASC");
@@ -36,59 +50,31 @@ try {
     $out = [];
 
     foreach ($rows as $r) {
-        // normalize fields (handle multiple possible column names)
+        // normalize fields
         $id = isset($r['id']) ? (string)$r['id'] : null;
         $nome = $r['nome'] ?? ($r['title'] ?? '');
-        // prefer data_hora_inicio / data_hora_fim, fallback to other names
         $start = $r['data_hora_inicio'] ?? ($r['start'] ?? null) ;
         $end   = $r['data_hora_fim'] ?? ($r['end'] ?? null) ;
-        // description/local
         $descricao = $r['descricao'] ?? ($r['description'] ?? '');
         $local = $r['local'] ?? ($r['location'] ?? '');
         $capa = $r['capa_url'] ?? ($r['capa'] ?? ($r['image'] ?? null));
         $icone = $r['icone_url'] ?? ($r['icone'] ?? null);
         $limite = array_key_exists('limite_participantes', $r) ? $r['limite_participantes'] : ($r['limit'] ?? null);
 
-        // inscricoes: may be JSON string or CSV
-        $inscricoes = [];
-        if (!empty($r['inscricoes'])) {
-            if (is_array($r['inscricoes'])) $inscricoes = array_values($r['inscricoes']);
-            else {
-                $tmp = json_decode($r['inscricoes'], true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $inscricoes = $tmp;
-                else $inscricoes = array_filter(array_map('trim', explode(',', (string)$r['inscricoes'])));
-            }
-        }
+        // Decodificar arrays JSON
+        $inscricoes = decodeJsonArray($r['inscricoes'] ?? null);
+        $turmas = decodeJsonArray($r['turmas_permitidas'] ?? null);
+        $colabs_nomes = decodeJsonArray($r['colaboradores'] ?? null); // Coluna antiga (nomes)
+        $colabs_ids = decodeJsonArray($r['colaboradores_ids'] ?? null);
+        
+        // --- MUDANÇA AQUI ---
+        // Decodificar novo array de palestrantes
+        $palestrantes_ids = decodeJsonArray($r['palestrantes_ids'] ?? null);
+        // --- FIM DA MUDANÇA ---
 
-        // turmas_permitidas and colaboradores may be JSON
-        $turmas = [];
-        if (!empty($r['turmas_permitidas'])) {
-            $tmp = json_decode($r['turmas_permitidas'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $turmas = $tmp;
-            else $turmas = array_filter(array_map('trim', explode(',', (string)$r['turmas_permitidas'])));
-        }
-        $colabs = [];
-        if (!empty($r['colaboradores'])) {
-            $tmp = json_decode($r['colaboradores'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $colabs = $tmp;
-            else $colabs = array_filter(array_map('trim', explode(',', (string)$r['colaboradores'])));
-        }
-
-        // colaboradores_ids (JSON array of ints)
-        $colaboradores_ids = [];
-        if (!empty($r['colaboradores_ids'])) {
-            $tmp = json_decode($r['colaboradores_ids'], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) $colaboradores_ids = array_map('intval', $tmp);
-            else {
-                $tmp2 = array_filter(array_map('trim', explode(',', (string)$r['colaboradores_ids'])));
-                $colaboradores_ids = array_map('intval', $tmp2);
-            }
-        }
-
-        // created_by
         $created_by = array_key_exists('created_by', $r) && $r['created_by'] !== null ? intval($r['created_by']) : null;
 
-        // ensure dates are strings (mysql returns as string)
+        // Montar objeto de evento para o FullCalendar
         $event = [
             "id" => $id,
             "nome" => $nome,
@@ -103,10 +89,13 @@ try {
             "icone_url" => $icone,
             "limite_participantes" => $limite !== null ? (int)$limite : null,
             "turmas_permitidas" => $turmas,
-            "colaboradores" => $colabs,
-            "colaboradores_ids" => $colaboradores_ids,
+            "colaboradores" => $colabs_nomes,
+            "colaboradores_ids" => $colabs_ids,
+            "palestrantes_ids" => $palestrantes_ids, // <-- Adicionado
             "inscricoes" => $inscricoes,
             "created_by" => $created_by,
+            
+            // extendedProps redundantes (mas o index.php usa)
             "extendedProps" => [
                 "descricao" => $descricao,
                 "local" => $local,
@@ -114,8 +103,9 @@ try {
                 "icone_url" => $icone,
                 "limite_participantes" => $limite !== null ? (int)$limite : null,
                 "turmas_permitidas" => $turmas,
-                "colaboradores" => $colabs,
-                "colaboradores_ids" => $colaboradores_ids,
+                "colaboradores" => $colabs_nomes,
+                "colaboradores_ids" => $colabs_ids,
+                "palestrantes_ids" => $palestrantes_ids, // <-- Adicionado
                 "inscricoes" => $inscricoes,
                 "created_by" => $created_by
             ]

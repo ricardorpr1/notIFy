@@ -18,13 +18,22 @@ if (!isset($_SESSION['usuario_id'])) {
   <style>
     body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f7f7f7; }
     #calendarContainer { max-width:1100px; margin:70px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
-    #addEventBtn, #permissionsBtn { position:fixed; top:20px; left:20px; background:#228b22; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; z-index:1100; display:none; }
-    #permissionsBtn { left:160px; background:#6f42c1; }
+    #meusEventosBtn {
+        position:fixed; top:20px; left:20px; background:#007bff; color:#fff; 
+        border:none; padding:10px 16px; border-radius:6px; cursor:pointer; 
+        z-index:1100; display:inline-block; 
+    }
+    #addEventBtn, #permissionsBtn { 
+        position:fixed; top:20px; left:160px; 
+        background:#228b22; color:#fff; border:none; padding:10px 16px; 
+        border-radius:6px; cursor:pointer; z-index:1100; display:none; 
+    }
+    #permissionsBtn { left:310px; background:#6f42c1; } 
+
     #userArea { position:fixed; top:12px; right:12px; z-index:1200; display:flex; gap:10px; align-items:center; }
     #profileImg { width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; border:2px solid #fff; }
     #logoutMini { background:#d9534f;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer; display:none; }
 
-    /* modal */
     #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1200; align-items:center; justify-content:center; }
     .modal { background:#fff; width:90%; max-width:760px; border-radius:10px; padding:16px; box-shadow:0 12px 30px rgba(0,0,0,0.25); max-height:90vh; overflow:auto; }
     .modal-header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
@@ -41,11 +50,10 @@ if (!isset($_SESSION['usuario_id'])) {
     .btn-export { background:#007bff; color:#fff; }
     .btn-collab { background:#6f42c1; color:#fff; }
     .btn-edit { background:#17a2b8; color:#fff; }
+    .btn-palestrante { background:#fd7e14; color:#fff; } /* Laranja para palestrante */
 
-    /* profile card overlay */
     #profileOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center; }
     #profileCard { background:#fff; width:360px; border-radius:10px; padding:18px; box-shadow:0 12px 30px rgba(0,0,0,0.25); }
-
     .qr-box { display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:12px; }
 
     @media (max-width:780px) {
@@ -56,6 +64,7 @@ if (!isset($_SESSION['usuario_id'])) {
   </style>
 </head>
 <body>
+  <button id="meusEventosBtn">Meus Eventos</button>
   <button id="addEventBtn">Adicionar Evento</button>
   <button id="permissionsBtn">Permissões</button>
 
@@ -93,13 +102,14 @@ if (!isset($_SESSION['usuario_id'])) {
         <button id="btnClose" class="btn btn-close">Fechar</button>
         <button id="inscribeBtn" class="btn btn-inscribe" style="display:none;">Inscrever-se</button>
         <button id="btnExport" class="btn btn-export" style="display:none;">Exportar lista de inscrições</button>
+        <button id="btnAddPalestrantes" class="btn btn-palestrante" style="display:none;">Adicionar palestrantes</button>
         <button id="btnAddCollaborators" class="btn btn-collab" style="display:none;">Adicionar colaboradores</button>
         <button id="btnEdit" class="btn btn-edit" style="display:none;">Editar</button>
         <button id="btnDelete" class="btn btn-delete" style="display:none;">Excluir evento</button>
       </div>
     </div>
   </div>
-
+  
   <div id="profileOverlay">
     <div id="profileCard">
       <div style="display:flex;gap:12px;align-items:center;">
@@ -133,86 +143,51 @@ if (!isset($_SESSION['usuario_id'])) {
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
-    // Variáveis que serão preenchidas após get_user.php
-    let currentUser = null; // objeto com id, nome, role, foto_url...
+    let currentUser = null; 
     let calendar = null;
     let selectedEvent = null;
 
     // utilitários
-    function formatDateTimeForDisplay(s) {
-      if (!s) return '—';
-      const d = new Date(s.replace(' ', 'T'));
-      if (isNaN(d)) return s;
-      return d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-    }
-    function toInputDatetimeLocal(s) {
-      if (!s) return '';
-      const t = s.replace(' ', 'T');
-      return t.length >= 16 ? t.slice(0,16) : t;
-    }
-    function parseCollaborators(props) {
-      let arr = [];
-      if (!props) return arr;
-      if (Array.isArray(props.colaboradores_ids)) return props.colaboradores_ids.map(String);
-      if (Array.isArray(props.colaboradores)) return props.colaboradores.map(String);
-      const tryField = props.colaboradores_ids ?? props.colaboradores ?? null;
-      if (!tryField) return arr;
-      if (typeof tryField === 'string') {
-        try {
-          const parsed = JSON.parse(tryField);
-          if (Array.isArray(parsed)) return parsed.map(String);
-        } catch(e) {
-          return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String);
+    function formatDateTimeForDisplay(s) { if (!s) return '—'; const d = new Date(s.replace(' ', 'T')); if (isNaN(d)) return s; return d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }); }
+    function toInputDatetimeLocal(s) { if (!s) return ''; const t = s.replace(' ', 'T'); return t.length >= 16 ? t.slice(0,16) : t; }
+    function parseJsonArrayProp(props, key) {
+        let arr = [];
+        const tryField = props[key] ?? null;
+        if (!tryField) return arr;
+        if (Array.isArray(tryField)) return tryField.map(String);
+        if (typeof tryField === 'string') {
+            try {
+                const parsed = JSON.parse(tryField);
+                if (Array.isArray(parsed)) return parsed.map(String);
+            } catch(e) {
+                return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String);
+            }
         }
-      }
-      return [String(tryField)];
+        return [String(tryField)];
     }
-    function getEventColor(start, end) {
-      const now = new Date();
-      const s = start ? new Date(start) : null;
-      const e = end ? new Date(end) : null;
-      if (s && now < s) return 'green';
-      if (s && e && now >= s && now <= e) return 'yellow';
-      if (e && now > e) return 'red';
-      return 'green';
-    }
+    function getEventColor(start, end) { const now = new Date(); const s = start ? new Date(start) : null; const e = end ? new Date(end) : null; if (s && now < s) return 'green'; if (s && e && now >= s && now <= e) return 'yellow'; if (e && now > e) return 'red'; return 'green'; }
 
-    // fetch do usuário logado e inicializa app
+    // fetchUserAndInit
     async function fetchUserAndInit() {
       try {
         const res = await fetch('get_user.php', { cache: 'no-store' });
-        if (!res.ok) {
-          // redireciona para inicio se não autenticado
-          if (res.status === 401) window.location.href = 'telainicio.html';
-          throw new Error('Falha ao obter dados do usuário');
-        }
+        if (!res.ok) { if (res.status === 401) window.location.href = 'telainicio.html'; throw new Error('Falha ao obter dados do usuário'); }
         const data = await res.json();
         currentUser = data;
-
-        // atualizar UI (perfil, botões)
         const profileImg = document.getElementById('profileImg');
         profileImg.src = currentUser.foto_url || 'default.jpg';
         profileImg.onerror = () => profileImg.src = 'default.jpg';
-
         document.getElementById('logoutMini').style.display = 'inline-block';
-
-        // mostrar botões conforme role
         if (currentUser.role >= 1) document.getElementById('addEventBtn').style.display = 'inline-block';
         if (currentUser.role === 2) document.getElementById('permissionsBtn').style.display = 'inline-block';
-
-        // inicializar calendário e handlers agora que sabemos o usuário
         initCalendar();
         attachProfileHandlers();
-      } catch (err) {
-        console.error('Erro ao carregar usuário:', err);
-        alert('Não foi possível carregar dados do usuário. Recarregue a página.');
-      }
+      } catch (err) { console.error('Erro ao carregar usuário:', err); alert('Não foi possível carregar dados do usuário. Recarregue a página.'); }
     }
 
-    // inicializa o calendário e todos os handlers (usa currentUser)
+    // inicializa o calendário e todos os handlers
     function initCalendar() {
       const overlay = document.getElementById('overlay');
-      const viewModal = document.getElementById('viewModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalDescription = document.getElementById('modalDescription');
       const modalLocation = document.getElementById('modalLocation');
@@ -220,19 +195,18 @@ if (!isset($_SESSION['usuario_id'])) {
       const modalCount = document.getElementById('modalCount');
       const modalStart = document.getElementById('modalStart');
       const modalEnd = document.getElementById('modalEnd');
-
       const modalClose = document.getElementById('modalClose');
       const btnClose = document.getElementById('btnClose');
       const inscribeBtn = document.getElementById('inscribeBtn');
       const btnDelete = document.getElementById('btnDelete');
       const btnExport = document.getElementById('btnExport');
       const btnAddCollaborators = document.getElementById('btnAddCollaborators');
+      const btnAddPalestrantes = document.getElementById('btnAddPalestrantes'); 
       const btnEdit = document.getElementById('btnEdit');
-      const btnValidate = document.getElementById('btnValidate'); // <-- Botão de validar
+      const btnValidate = document.getElementById('btnValidate'); 
 
       function openModal() { overlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
       function closeModal() { overlay.style.display = 'none'; document.body.style.overflow = ''; selectedEvent = null; }
-
       modalClose.addEventListener('click', closeModal);
       btnClose.addEventListener('click', closeModal);
       overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
@@ -248,23 +222,21 @@ if (!isset($_SESSION['usuario_id'])) {
           modalTitle.textContent = selectedEvent.title || props.nome || 'Sem título';
           modalDescription.textContent = props.descricao ?? props.description ?? '';
           modalLocation.textContent = props.local ?? props.location ?? 'Não informado';
-
           const startStr = selectedEvent.start ? selectedEvent.start.toISOString().slice(0,19).replace('T',' ') : (props.data_hora_inicio ?? props.start ?? '');
           const endStr = selectedEvent.end ? selectedEvent.end.toISOString().slice(0,19).replace('T',' ') : (props.data_hora_fim ?? props.end ?? '');
-
           modalStart.textContent = formatDateTimeForDisplay(startStr);
           modalEnd.textContent = formatDateTimeForDisplay(endStr);
 
-          const inscricoes = Array.isArray(props.inscricoes) ? props.inscricoes.map(String) : (props.inscricoes ? (Array.isArray(props.inscricoes) ? props.inscricoes.map(String) : String(props.inscricoes).split(',').map(s=>s.trim()).filter(Boolean)) : []);
+          const inscricoes = parseJsonArrayProp(props, 'inscricoes');
+          const collaboratorsArr = parseJsonArrayProp(props, 'colaboradores_ids');
+          const palestrantesArr = parseJsonArrayProp(props, 'palestrantes_ids'); 
+          
           modalCount.textContent = inscricoes.length;
 
           let createdBy = null;
           if (props.created_by !== undefined && props.created_by !== null) createdBy = String(props.created_by);
           else if (selectedEvent._def && selectedEvent._def.extendedProps && selectedEvent._def.extendedProps.created_by !== undefined) createdBy = String(selectedEvent._def.extendedProps.created_by);
 
-          const collaboratorsArr = parseCollaborators(props);
-
-          // Inscrição botão
           if (currentUser && currentUser.id) {
             inscribeBtn.style.display = 'inline-block';
             const isInscrito = inscricoes.includes(String(currentUser.id));
@@ -274,26 +246,18 @@ if (!isset($_SESSION['usuario_id'])) {
             inscribeBtn.style.display = 'none';
           }
 
-          // permissões
           const isDev = (currentUser && currentUser.role === 2);
           const isCreator = (createdBy !== null && String(createdBy) === String(currentUser.id));
           const isCollaborator = collaboratorsArr.includes(String(currentUser.id));
 
-          // *** MUDANÇA AQUI ***
-          if (isDev || isCreator || isCollaborator) {
-            btnExport.style.display = 'inline-block';
-            btnDelete.style.display = 'inline-block';
-            btnEdit.style.display = 'inline-block';
-            btnValidate.style.display = 'inline-block'; // <-- Mostrar botão
-          } else {
-            btnExport.style.display = 'none';
-            btnDelete.style.display = 'none';
-            btnEdit.style.display = 'none';
-            btnValidate.style.display = 'none'; // <-- Esconder botão
-          }
-          // *** FIM DA MUDANÇA ***
-
-          if (isDev || isCreator) btnAddCollaborators.style.display = 'inline-block'; else btnAddCollaborators.style.display = 'none';
+          const canManage = isDev || isCreator || isCollaborator;
+          
+          btnExport.style.display = canManage ? 'inline-block' : 'none';
+          btnDelete.style.display = canManage ? 'inline-block' : 'none';
+          btnEdit.style.display = canManage ? 'inline-block' : 'none';
+          btnValidate.style.display = canManage ? 'inline-block' : 'none';
+          btnAddPalestrantes.style.display = canManage ? 'inline-block' : 'none';
+          btnAddCollaborators.style.display = (isDev || isCreator) ? 'inline-block' : 'none';
 
           const imageUrl = props.capa_url ?? props.capa ?? props.image ?? null;
           if (imageUrl) { modalImage.src = imageUrl; modalImage.style.display = 'block'; } else modalImage.style.display = 'none';
@@ -314,7 +278,7 @@ if (!isset($_SESSION['usuario_id'])) {
       // carregar eventos
       (async function loadEvents() {
         try {
-          const res = await fetch('list_events.php', { cache: 'no-store' });
+          const res = await fetch('list_events.php', { cache: 'no-store' }); 
           const raw = await res.text();
           if (!raw) return;
           let data;
@@ -334,6 +298,7 @@ if (!isset($_SESSION['usuario_id'])) {
                 inscricoes: row.inscricoes ?? [],
                 colaboradores: row.colaboradores ?? [],
                 colaboradores_ids: row.colaboradores_ids ?? [],
+                palestrantes_ids: row.palestrantes_ids ?? [], 
                 created_by: row.created_by ?? null,
                 limite_participantes: row.limite_participantes ?? null,
                 turmas_permitidas: row.turmas_permitidas ?? []
@@ -346,14 +311,8 @@ if (!isset($_SESSION['usuario_id'])) {
         }
       })();
 
-      // *** MUDANÇA AQUI: Adicionar listener para o botão de validar ***
-      btnValidate.addEventListener('click', () => {
-        if (!selectedEvent) return;
-        // Redireciona para a página de validação, passando o ID do evento
-        window.location.href = `validar_presenca.php?event_id=${encodeURIComponent(selectedEvent.id)}`;
-      });
-      // *** FIM DA MUDANÇA ***
-
+      // --- CÓDIGO RESTAURADO ---
+      
       // Inscrever / remover inscrição
       inscribeBtn.addEventListener('click', async () => {
         if (!selectedEvent) return;
@@ -398,19 +357,7 @@ if (!isset($_SESSION['usuario_id'])) {
           alert('Erro na exclusão.');
         }
       });
-
-      // Exportar lista
-      btnExport.addEventListener('click', () => {
-        if (!selectedEvent) return;
-        window.location.href = `export_inscricoes.php?id=${encodeURIComponent(selectedEvent.id)}`;
-      });
-
-      // Add collaborators
-      btnAddCollaborators.addEventListener('click', () => {
-        if (!selectedEvent) return;
-        window.location.href = `collaborators.php?event_id=${encodeURIComponent(selectedEvent.id)}`;
-      });
-
+      
       // Edit event (abre modal de edição)
       btnEdit.addEventListener('click', () => {
         if (!selectedEvent) return;
@@ -438,7 +385,10 @@ if (!isset($_SESSION['usuario_id'])) {
           alert('Erro ao sair.');
         }
       });
-
+      
+      // helper para escapar HTML
+      function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      
       // abrir modal de edição (cria dinamicamente)
       function openEditModal(prefill) {
         const existing = document.getElementById('editModal');
@@ -534,10 +484,17 @@ if (!isset($_SESSION['usuario_id'])) {
           }
         });
       }
+      // --- FIM DO CÓDIGO RESTAURADO ---
 
-      function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      // Listeners dos novos botões
+      btnValidate.addEventListener('click', () => { if (selectedEvent) window.location.href = `validar_presenca.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
+      btnExport.addEventListener('click', () => { if (selectedEvent) window.location.href = `export_inscricoes.php?id=${encodeURIComponent(selectedEvent.id)}`; });
+      btnAddCollaborators.addEventListener('click', () => { if (selectedEvent) window.location.href = `collaborators.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
+      btnAddPalestrantes.addEventListener('click', () => { if (selectedEvent) window.location.href = `palestrantes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
+
     } // end initCalendar
 
+    // --- CÓDIGO RESTAURADO ---
     // perfil handlers (abre get_user.php quando clicar)
     function attachProfileHandlers() {
       const profileBtn = document.getElementById('profileImg');
@@ -581,28 +538,24 @@ if (!isset($_SESSION['usuario_id'])) {
 
       editProfileBtn.addEventListener('click', () => { window.location.href = 'perfil_editar.php'; });
 
-      // Geração do QR (usa a mesma ideia do script.js do seu colega)
+      // Geração do QR
       generateQRBtn.addEventListener('click', async () => {
         try {
           const res = await fetch('get_user.php', { cache: 'no-store' });
           if (!res.ok) { alert('Não foi possível obter CPF.'); return; }
           const u = await res.json();
           let cpf = u.cpf || '';
-          // remover tudo que não é dígito
           cpf = String(cpf).replace(/\D/g, '');
           if (!cpf) { alert('CPF não disponível.'); return; }
           if (cpf.length !== 11) {
-            // aceita CPF com menos/mais dígitos? você pediu 11 dígitos: avisar o usuário.
             alert('CPF precisa ter 11 dígitos para gerar o QR code. Valor atual: ' + cpf);
             return;
           }
-          // gerar QR usando API externa simples
           const size = 250;
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(cpf)}`;
           qrImage.src = qrUrl;
           qrImage.style.display = 'block';
 
-          // configurar link de download direto (alguns navegadores não vão permitir salvar cross-origin images; mas linkará para a imagem)
           downloadQR.href = qrUrl;
           downloadQR.style.display = 'inline-block';
           downloadQR.textContent = 'Baixar QR';
@@ -612,11 +565,12 @@ if (!isset($_SESSION['usuario_id'])) {
         }
       });
     }
+    // --- FIM DO CÓDIGO RESTAURADO ---
 
-    // Iniciar: buscar usuário e inicializar
+    // Iniciar
     document.addEventListener('DOMContentLoaded', () => {
       fetchUserAndInit();
-      // addEvent btn redirect
+      document.getElementById('meusEventosBtn').addEventListener('click', () => { location.href = 'meus_eventos.php'; });
       document.getElementById('addEventBtn').addEventListener('click', () => { location.href = 'adicionarevento.html'; });
       document.getElementById('permissionsBtn').addEventListener('click', () => { location.href = 'permissions.php'; });
     });
