@@ -92,6 +92,7 @@ if (!isset($_SESSION['usuario_id'])) {
       </div>
 
       <div class="modal-footer">
+        <button id="btnValidate" class="btn" style="background:#10b981; color:#fff; display:none;">Validar presença</button>
         <button id="btnClose" class="btn btn-close">Fechar</button>
         <button id="inscribeBtn" class="btn btn-inscribe" style="display:none;">Inscrever-se</button>
         <button id="btnExport" class="btn btn-export" style="display:none;">Exportar lista de inscrições</button>
