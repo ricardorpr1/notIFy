@@ -56,11 +56,9 @@ if (!isset($_SESSION['usuario_id'])) {
   </style>
 </head>
 <body>
-  <!-- botões (inicialmente escondidos; serão mostrados via JS após get_user.php) -->
   <button id="addEventBtn">Adicionar Evento</button>
   <button id="permissionsBtn">Permissões</button>
 
-  <!-- user area (profile image + logout pequeno) -->
   <div id="userArea">
     <img id="profileImg" src="default.jpg" alt="Perfil" title="Meu perfil" />
     <button id="logoutMini">Sair</button>
@@ -70,7 +68,6 @@ if (!isset($_SESSION['usuario_id'])) {
     <div id="calendar"></div>
   </div>
 
-  <!-- Modal de visualização de evento -->
   <div id="overlay" aria-modal="true" role="dialog">
     <div id="viewModal" class="modal" role="document">
       <div class="modal-header">
@@ -103,7 +100,6 @@ if (!isset($_SESSION['usuario_id'])) {
     </div>
   </div>
 
-  <!-- profile card -->
   <div id="profileOverlay">
     <div id="profileCard">
       <div style="display:flex;gap:12px;align-items:center;">
@@ -122,7 +118,6 @@ if (!isset($_SESSION['usuario_id'])) {
         <p style="margin:6px 0"><strong>Data de nascimento:</strong> <span id="cardBirth">—</span></p>
       </div>
 
-      <!-- QR code generator section -->
       <div class="qr-box">
         <button id="generateQRBtn" class="btn" style="background:#0b6bff;color:#fff;">Gerar QR code (CPF)</button>
         <img id="qrImage" src="" alt="QR Code" style="display:none;width:150px;height:150px;border-radius:8px;border:1px solid #e0e0e0;background:#fff;padding:6px;"/>
@@ -233,6 +228,7 @@ if (!isset($_SESSION['usuario_id'])) {
       const btnExport = document.getElementById('btnExport');
       const btnAddCollaborators = document.getElementById('btnAddCollaborators');
       const btnEdit = document.getElementById('btnEdit');
+      const btnValidate = document.getElementById('btnValidate'); // <-- Botão de validar
 
       function openModal() { overlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
       function closeModal() { overlay.style.display = 'none'; document.body.style.overflow = ''; selectedEvent = null; }
@@ -283,15 +279,19 @@ if (!isset($_SESSION['usuario_id'])) {
           const isCreator = (createdBy !== null && String(createdBy) === String(currentUser.id));
           const isCollaborator = collaboratorsArr.includes(String(currentUser.id));
 
+          // *** MUDANÇA AQUI ***
           if (isDev || isCreator || isCollaborator) {
             btnExport.style.display = 'inline-block';
             btnDelete.style.display = 'inline-block';
             btnEdit.style.display = 'inline-block';
+            btnValidate.style.display = 'inline-block'; // <-- Mostrar botão
           } else {
             btnExport.style.display = 'none';
             btnDelete.style.display = 'none';
             btnEdit.style.display = 'none';
+            btnValidate.style.display = 'none'; // <-- Esconder botão
           }
+          // *** FIM DA MUDANÇA ***
 
           if (isDev || isCreator) btnAddCollaborators.style.display = 'inline-block'; else btnAddCollaborators.style.display = 'none';
 
@@ -345,6 +345,14 @@ if (!isset($_SESSION['usuario_id'])) {
           console.error('Erro ao carregar eventos:', err);
         }
       })();
+
+      // *** MUDANÇA AQUI: Adicionar listener para o botão de validar ***
+      btnValidate.addEventListener('click', () => {
+        if (!selectedEvent) return;
+        // Redireciona para a página de validação, passando o ID do evento
+        window.location.href = `validar_presenca.php?event_id=${encodeURIComponent(selectedEvent.id)}`;
+      });
+      // *** FIM DA MUDANÇA ***
 
       // Inscrever / remover inscrição
       inscribeBtn.addEventListener('click', async () => {
