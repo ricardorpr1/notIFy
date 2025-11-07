@@ -1,11 +1,21 @@
 <?php
-// list_events.php - retorna todos os eventos normalizados para o frontend (JSON)
+// list_events.php - retorna APENAS eventos permitidos para o usuário logado
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
 
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: *"); // (Mantido, mas agora o acesso é filtrado)
+
+// --- ALTERAÇÃO: INICIAR SESSÃO ---
+session_start();
+
+// Pega os dados do usuário logado (ou 0/null se for convidado)
+$user_id = intval($_SESSION['usuario_id'] ?? 0);
+$user_role = intval($_SESSION['role'] ?? 0);
+$user_turma_id = isset($_SESSION['turma_id']) ? intval($_SESSION['turma_id']) : null;
+$is_aluno = ($user_turma_id !== null);
+// --- FIM DA ALTERAÇÃO ---
 
 $DB_HOST = "127.0.0.1";
 $DB_PORT = "3306";
@@ -29,28 +39,78 @@ try {
     respond(500, ["erro" => "Erro de conexão com o banco."]);
 }
 
-// Helper para decodificar JSON (robusto)
+// Helper para decodificar JSON (robusto, mantém inteiros)
 function decodeJsonArray($jsonString) {
     if (empty($jsonString)) return [];
-    if (is_array($jsonString)) return array_values($jsonString); // Já pode ser um array
-    
+    if (is_array($jsonString)) return array_values($jsonString); 
     $decoded = json_decode($jsonString, true);
     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-        return array_values($decoded);
+        // Garante que os valores sejam inteiros
+        return array_map('intval', array_values($decoded));
     }
-    
-    // Fallback para CSV (se não for JSON válido)
-    return array_filter(array_map('trim', explode(',', (string)$jsonString)));
+    // Fallback para CSV (menos provável com a nova estrutura)
+    $arr = array_filter(array_map('trim', explode(',', (string)$jsonString)));
+    return array_map('intval', $arr);
 }
 
 try {
-    // fetch all columns to be resilient to schema changes
+    // 1. Busca TODOS os eventos
     $stmt = $pdo->query("SELECT * FROM eventos ORDER BY data_hora_inicio ASC, id ASC");
     $rows = $stmt->fetchAll();
-    $out = [];
+    $out = []; // Array de saída (eventos permitidos)
 
+    // --- ALTERAÇÃO: LÓGICA DE FILTRAGEM ---
     foreach ($rows as $r) {
-        // normalize fields
+        
+        $turmas_permitidas = decodeJsonArray($r['turmas_permitidas'] ?? null);
+        $created_by = array_key_exists('created_by', $r) && $r['created_by'] !== null ? intval($r['created_by']) : null;
+        $colabs_ids = decodeJsonArray($r['colaboradores_ids'] ?? null);
+        $palestrantes_ids = decodeJsonArray($r['palestrantes_ids'] ?? null);
+
+        $podeVer = false;
+
+        // Regra 1: DEV (Role 2) pode ver tudo
+        if ($user_role === 2) {
+            $podeVer = true;
+        }
+        
+        // Regra 2: Evento é público (array de turmas vazio)
+        elseif (empty($turmas_permitidas)) {
+            $podeVer = true;
+        }
+        
+        // Regra 3: Usuário é o Criador, Colaborador ou Palestrante
+        elseif (
+            $user_id > 0 && 
+            (
+                ($created_by !== null && $created_by === $user_id) ||
+                in_array($user_id, $colabs_ids, true) ||
+                in_array($user_id, $palestrantes_ids, true)
+            )
+        ) {
+            $podeVer = true;
+        }
+        
+        // Regra 4: Usuário é Aluno (tem turma_id) e sua turma é permitida
+        elseif ($is_aluno && $user_turma_id !== null && in_array($user_turma_id, $turmas_permitidas, true)) {
+            $podeVer = true;
+        }
+        
+        // Regra 5: Usuário NÃO é Aluno (externo) e "Público Externo" (ID 0) é permitido
+        elseif (!$is_aluno && in_array(0, $turmas_permitidas, true)) {
+            $podeVer = true;
+        }
+
+        // Se não passou em nenhuma regra, pular este evento
+        if (!$podeVer) {
+            continue; // Pula para o próximo evento no loop
+        }
+
+        // --- FIM DA LÓGICA DE FILTRAGEM ---
+
+        // (Se chegou aqui, o usuário pode ver o evento)
+        
+        // Normalização dos dados (igual a antes)
         $id = isset($r['id']) ? (string)$r['id'] : null;
         $nome = $r['nome'] ?? ($r['title'] ?? '');
         $start = $r['data_hora_inicio'] ?? ($r['start'] ?? null) ;
@@ -58,54 +118,32 @@ try {
         $descricao = $r['descricao'] ?? ($r['description'] ?? '');
         $local = $r['local'] ?? ($r['location'] ?? '');
         $capa = $r['capa_url'] ?? ($r['capa'] ?? ($r['image'] ?? null));
-        $icone = $r['icone_url'] ?? ($r['icone'] ?? null);
+        $imagem_completa = $r['imagem_completa_url'] ?? ($r['icone'] ?? null);
         $limite = array_key_exists('limite_participantes', $r) ? $r['limite_participantes'] : ($r['limit'] ?? null);
-
-        // Decodificar arrays JSON
         $inscricoes = decodeJsonArray($r['inscricoes'] ?? null);
-        $turmas = decodeJsonArray($r['turmas_permitidas'] ?? null);
-        $colabs_nomes = decodeJsonArray($r['colaboradores'] ?? null); // Coluna antiga (nomes)
-        $colabs_ids = decodeJsonArray($r['colaboradores_ids'] ?? null);
-        
-        // --- MUDANÇA AQUI ---
-        // Decodificar novo array de palestrantes
-        $palestrantes_ids = decodeJsonArray($r['palestrantes_ids'] ?? null);
-        // --- FIM DA MUDANÇA ---
-
-        $created_by = array_key_exists('created_by', $r) && $r['created_by'] !== null ? intval($r['created_by']) : null;
+        $colabs_nomes = decodeJsonArray($r['colaboradores'] ?? null);
 
         // Montar objeto de evento para o FullCalendar
         $event = [
-            "id" => $id,
-            "nome" => $nome,
-            "title" => $nome,
-            "start" => $start,
-            "end" => $end,
-            "descricao" => $descricao,
-            "description" => $descricao,
-            "local" => $local,
-            "location" => $local,
-            "capa_url" => $capa,
-            "icone_url" => $icone,
+            "id" => $id, "nome" => $nome, "title" => $nome, "start" => $start, "end" => $end,
+            "descricao" => $descricao, "description" => $descricao, "local" => $local, "location" => $local,
+            "capa_url" => $capa, "imagem_completa_url" => $imagem_completa,
             "limite_participantes" => $limite !== null ? (int)$limite : null,
-            "turmas_permitidas" => $turmas,
+            "turmas_permitidas" => $turmas_permitidas, // Envia as turmas (embora o filtro já foi feito)
             "colaboradores" => $colabs_nomes,
             "colaboradores_ids" => $colabs_ids,
-            "palestrantes_ids" => $palestrantes_ids, // <-- Adicionado
+            "palestrantes_ids" => $palestrantes_ids, 
             "inscricoes" => $inscricoes,
             "created_by" => $created_by,
             
-            // extendedProps redundantes (mas o index.php usa)
             "extendedProps" => [
-                "descricao" => $descricao,
-                "local" => $local,
-                "capa_url" => $capa,
-                "icone_url" => $icone,
+                "descricao" => $descricao, "local" => $local, "capa_url" => $capa,
+                "imagem_completa_url" => $imagem_completa,
                 "limite_participantes" => $limite !== null ? (int)$limite : null,
-                "turmas_permitidas" => $turmas,
+                "turmas_permitidas" => $turmas_permitidas,
                 "colaboradores" => $colabs_nomes,
                 "colaboradores_ids" => $colabs_ids,
-                "palestrantes_ids" => $palestrantes_ids, // <-- Adicionado
+                "palestrantes_ids" => $palestrantes_ids, 
                 "inscricoes" => $inscricoes,
                 "created_by" => $created_by
             ]
@@ -113,8 +151,9 @@ try {
 
         $out[] = $event;
     }
+    // --- FIM DO LOOP FOREACH ---
 
-    respond(200, $out);
+    respond(200, $out); // Envia apenas os eventos filtrados
 
 } catch (PDOException $e) {
     error_log("list_events.php query error: " . $e->getMessage());

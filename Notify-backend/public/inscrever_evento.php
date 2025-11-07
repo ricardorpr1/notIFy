@@ -49,6 +49,11 @@ $dbname = "notify_db";
 $user = "tcc_notify";
 $password = "108Xk:C";
 
+// --- NOVA LÓGICA DE DATA ---
+// Define o fuso horário correto para a comparação
+date_default_timezone_set('America/Sao_Paulo');
+// --- FIM DA NOVA LÓGICA ---
+
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -58,8 +63,9 @@ try {
     // usar transação para evitar race conditions
     $pdo->beginTransaction();
 
-    // buscar inscricoes atuais (lock row)
-    $stmt = $pdo->prepare("SELECT inscricoes FROM eventos WHERE id = :id FOR UPDATE");
+    // --- QUERY ATUALIZADA ---
+    // Busca as inscrições E a data de fim do evento
+    $stmt = $pdo->prepare("SELECT inscricoes, data_hora_fim FROM eventos WHERE id = :id FOR UPDATE");
     $stmt->execute([':id' => $eventoId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -69,6 +75,21 @@ try {
         echo json_encode(["erro" => "Evento não encontrado."]);
         exit;
     }
+
+    // --- NOVA CHECAGEM DE DATA ---
+    if (!empty($row['data_hora_fim'])) {
+        $agora = new DateTime();
+        $fim_evento = new DateTime($row['data_hora_fim']);
+        
+        // Se o horário atual for MAIOR que o horário de fim do evento
+        if ($agora > $fim_evento) {
+            $pdo->rollBack();
+            http_response_code(403); // 403 Forbidden
+            echo json_encode(["erro" => "Inscrições encerradas. Este evento já terminou."]);
+            exit;
+        }
+    }
+    // --- FIM DA CHECAGEM ---
 
     $inscricoes = [];
     if (!empty($row['inscricoes'])) {

@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$errorMsg) {
             try {
+                // Puxa todos os dados do usuário, incluindo turma_id
                 $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email LIMIT 1");
                 $stmt->execute([':email' => $email]);
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -55,15 +56,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['usuario_id'] = intval($user['id']);
                         $_SESSION['usuario_nome'] = $user['nome'] ?? '';
                         $_SESSION['usuario_email'] = $user['email'] ?? '';
-                        // role: tenta a coluna 'role', fallback para seradmin (booleana)
+                        
+                        // role: tenta a coluna 'role', fallback para seradmin
                         if (isset($user['role'])) {
                             $_SESSION['role'] = intval($user['role']);
                         } else {
-                            // seradmin true => treat as dev (2) otherwise 0
-                            if (isset($user['seradmin'])) $_SESSION['role'] = $user['seradmin'] ? 2 : 0;
-                            else $_SESSION['role'] = 0;
+                            $_SESSION['role'] = (isset($user['seradmin']) && $user['seradmin']) ? 2 : 0;
                         }
                         $_SESSION['foto_url'] = $user['foto_url'] ?? '';
+                        
+                        // --- ALTERAÇÃO AQUI ---
+                        // Salva a turma_id (ou null se não for aluno) na sessão
+                        $_SESSION['turma_id'] = isset($user['turma_id']) ? intval($user['turma_id']) : null;
+                        // --- FIM DA ALTERAÇÃO ---
 
                         // redireciona para index.php
                         header('Location: index.php');
@@ -76,15 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-}
-
-// Se veio ?error=... via query string mostra mensagem amigável (mantive por compatibilidade)
-if (!$errorMsg) {
-    $qsErr = $_GET['error'] ?? '';
-    if ($qsErr === 'empty') $errorMsg = 'Preencha e-mail e senha.';
-    elseif ($qsErr === 'notfound') $errorMsg = 'Usuário não encontrado.';
-    elseif ($qsErr === 'badpass') $errorMsg = 'Senha incorreta.';
-    elseif ($qsErr === 'server') $errorMsg = 'Erro no servidor. Tente novamente mais tarde.';
 }
 ?>
 <!DOCTYPE html>
@@ -100,7 +96,6 @@ if (!$errorMsg) {
     input { width:100%; padding:10px 12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; }
     button { width:100%; padding:10px; background:#045c3f; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:10px; }
     .error { margin-top:10px; padding:10px; background:#ffdede; color:#a94442; border-radius:6px; display:block; }
-    .info { margin-top:10px; padding:10px; background:#e6f7ea; color:#0b6b33; border-radius:6px; display:block; }
     .link { text-align:center; margin-top:12px; font-size:14px; color:#666; }
     .link a { color:#045c3f; text-decoration:none; font-weight:600; }
   </style>
@@ -111,10 +106,6 @@ if (!$errorMsg) {
 
     <?php if ($errorMsg): ?>
       <div id="errorBox" class="error"><?= htmlspecialchars($errorMsg) ?></div>
-    <?php endif; ?>
-
-    <?php if ($infoMsg): ?>
-      <div class="info"><?= htmlspecialchars($infoMsg) ?></div>
     <?php endif; ?>
 
     <form id="loginForm" action="login.php" method="POST" autocomplete="on">
