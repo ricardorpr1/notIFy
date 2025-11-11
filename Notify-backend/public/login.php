@@ -113,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       color: white;
       display: flex;
       align-items: center;
+      justify-content: center;
       padding: 10px 20px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
@@ -130,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       margin: 0;
     }
 
-    header h1 span {
+    header span {
       color: #c00000;
     }
     .card {
@@ -140,6 +141,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
       width: 360px;
     }
+
+    main {
+      margin-top: 120px; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .logo {
+      width: 260px;
+      max-width: 100%;
+      margin-bottom: 20px;
+    }
+
 
     h2 {
       margin: 0 0 12px 0;
@@ -208,14 +225,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 <header>
-    <img src="https://cdn-icons-png.flaticon.com/512/747/747310.png" 
-         alt="Calendário" 
-         onclick="window.location.href='inicio.html'">
     <h1>Not<span>IF</span>y</h1>
   </header>
-  
+<main>
+<img src= "logo11.png" alt="Logo NotIFy" class="logo">
   <div class="card" role="main">
-    <h2>Entrar — notIFy</h2>
+    <h2>Entrar</h2>
 
     <?php if ($errorMsg): ?>
       <div id="errorBox" class="error"><?= htmlspecialchars($errorMsg) ?></div>
@@ -235,6 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <footer>
     Not<span>IF</span>y © 2025
   </footer>
+  </main>
 </body>
 
 </html>
