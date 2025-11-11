@@ -1,26 +1,19 @@
 <?php
-// index.php - Página principal (COMPLETA e com botão de inscrição desabilitado se o evento acabou)
+// index.php - Página principal (COMPLETA e com link para Gerenciar Inscrições)
 session_start();
-
-// redireciona se não autenticado
 if (!isset($_SESSION['usuario_id'])) {
     header('Location: telainicio.html');
     exit;
 }
-
-// --- NOVOS DADOS PARA O MODAL DE EDIÇÃO ---
 $DB_HOST = "127.0.0.1"; $DB_PORT = "3306"; $DB_NAME = "notify_db";
 $DB_USER = "tcc_notify"; $DB_PASS = "108Xk:C";
-$cursos_map_json = "[]";
-$turmas_json = "[]";
+$cursos_map_json = "[]"; $turmas_json = "[]";
 try {
     $pdo_idx = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
     $cursos = $pdo_idx->query("SELECT id, nome, sigla FROM cursos ORDER BY nome")->fetchAll();
     $turmas = $pdo_idx->query("SELECT id, curso_id, nome_exibicao FROM turmas ORDER BY ano, nome_exibicao")->fetchAll();
-    
     $cursos_map = [];
     foreach ($cursos as $curso) {
         $cursos_map[$curso['id']] = $curso;
@@ -32,11 +25,8 @@ try {
         }
     }
     $cursos_map_json = json_encode(array_values($cursos_map));
-    $turmas_json = json_encode($turmas); // Usado para o perfil
-} catch (PDOException $e) {
-    // Falha silenciosa
-}
-// --- FIM DOS NOVOS DADOS ---
+    $turmas_json = json_encode($turmas);
+} catch (PDOException $e) { /* Falha silenciosa */ }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -68,7 +58,7 @@ try {
     .btn-close { background:#6c757d; color:#fff; }
     .btn-delete { background:#d9534f; color:#fff; }
     .btn-inscribe { background:#0b6bff; color:#fff; }
-    .btn-inscribe:disabled { background:#aaa; cursor: not-allowed; } /* Estilo para botão desabilitado */
+    .btn-inscribe:disabled { background:#aaa; cursor: not-allowed; }
     .btn-export { background:#007bff; color:#fff; }
     .btn-collab { background:#6f42c1; color:#fff; }
     .btn-edit { background:#17a2b8; color:#fff; }
@@ -80,7 +70,7 @@ try {
     .qr-box { display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:12px; }
     .fc-event-title-custom { font-weight: bold; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.5); padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fc-event-cover-img { width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 0 0 4px 4px; margin-top: 2px; }
-    .fc-daygrid-event { padding: 0 !important; }
+    .fc-daygrid-event { padding: 0 !important; border-width: 3px !important; border-style: solid; border-radius: 6px; }
     .turmas-container { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-top: 5px; max-height: 150px; overflow-y: auto; background: #fdfdfd; }
     .turma-curso-grupo { margin-bottom: 8px; }
     .turma-curso-grupo strong { font-size: 14px; color: #0056b3; }
@@ -126,7 +116,7 @@ try {
         <button id="btnValidate" class="btn" style="background:#10b981; color:#fff; display:none;">Validar presença</button>
         <button id="btnClose" class="btn btn-close">Fechar</button>
         <button id="inscribeBtn" class="btn btn-inscribe" style="display:none;">Inscrever-se</button>
-        <button id="btnExport" class="btn btn-export" style="display:none;">Exportar lista de inscrições</button>
+        <button id="btnManageInscricoes" class="btn btn-export" style="display:none;">Gerenciar Inscrições</button>
         <button id="btnAddPalestrantes" class="btn btn-palestrante" style="display:none;">Adicionar palestrantes</button>
         <button id="btnAddCollaborators" class="btn btn-collab" style="display:none;">Adicionar colaboradores</button>
         <button id="btnEdit" class="btn btn-edit" style="display:none;">Editar</button>
@@ -228,7 +218,7 @@ try {
       const btnClose = document.getElementById('btnClose');
       const inscribeBtn = document.getElementById('inscribeBtn');
       const btnDelete = document.getElementById('btnDelete');
-      const btnExport = document.getElementById('btnExport');
+      const btnManageInscricoes = document.getElementById('btnManageInscricoes'); // <-- ATUALIZADO
       const btnAddCollaborators = document.getElementById('btnAddCollaborators');
       const btnAddPalestrantes = document.getElementById('btnAddPalestrantes'); 
       const btnEdit = document.getElementById('btnEdit');
@@ -273,7 +263,6 @@ try {
           if (props.created_by !== undefined && props.created_by !== null) createdBy = String(props.created_by);
           else if (selectedEvent._def && selectedEvent._def.extendedProps && selectedEvent._def.extendedProps.created_by !== undefined) createdBy = String(selectedEvent._def.extendedProps.created_by);
 
-          // --- CHECAGEM DE DATA ---
           let isHappeningNow = false;
           let eventoTerminou = false;
           if (startStr && endStr) {
@@ -285,8 +274,7 @@ try {
                   if (now > endTime) eventoTerminou = true;
               } catch(e) {}
           }
-
-          // --- LÓGICA DO BOTÃO INSCREVER-SE ATUALIZADA ---
+          
           if (currentUser && currentUser.id) {
             inscribeBtn.style.display = 'inline-block';
             if (eventoTerminou) {
@@ -294,20 +282,26 @@ try {
                 inscribeBtn.disabled = true;
             } else {
                 const isInscrito = inscricoes.includes(String(currentUser.id));
-                inscribeBtn.textContent = isInscrito ? 'Remover inscrição' : 'Inscrever-se';
-                inscribeBtn.disabled = false;
+                const limite = props.limite_participantes; 
+                const inscritosCount = inscricoes.length;
+                if (limite && limite > 0 && inscritosCount >= limite && !isInscrito) {
+                    inscribeBtn.textContent = `Lotado (${inscritosCount}/${limite})`;
+                    inscribeBtn.disabled = true;
+                } else {
+                    inscribeBtn.textContent = isInscrito ? 'Remover inscrição' : 'Inscrever-se';
+                    inscribeBtn.disabled = false;
+                }
             }
           } else {
             inscribeBtn.style.display = 'none';
           }
-          // --- FIM DA LÓGICA ---
 
           const isDev = (currentUser && currentUser.role === 2);
           const isCreator = (createdBy !== null && String(createdBy) === String(currentUser.id));
           const isCollaborator = collaboratorsArr.includes(String(currentUser.id));
           const canManage = isDev || isCreator || isCollaborator;
           
-          btnExport.style.display = canManage ? 'inline-block' : 'none';
+          btnManageInscricoes.style.display = canManage ? 'inline-block' : 'none'; // <-- ATUALIZADO
           btnDelete.style.display = canManage ? 'inline-block' : 'none';
           btnEdit.style.display = canManage ? 'inline-block' : 'none';
           btnAddPalestrantes.style.display = canManage ? 'inline-block' : 'none';
@@ -338,12 +332,12 @@ try {
           const start = info.event.start ? info.event.start.toISOString().slice(0,19).replace('T',' ') : (info.event.extendedProps?.data_hora_inicio ?? null);
           const end = info.event.end ? info.event.end.toISOString().slice(0,19).replace('T',' ') : (info.event.extendedProps?.data_hora_fim ?? null);
           const c = getEventColor(start, end); 
+          info.el.style.borderColor = c;
           if (info.event.extendedProps.capa_url) {
              info.el.style.backgroundColor = '#333'; 
           } else {
              info.el.style.backgroundColor = c; 
           }
-          info.el.style.borderColor = c;
         }
       });
       calendar.render();
@@ -388,14 +382,19 @@ try {
           const text = await res.text();
           let json = {};
           try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
-          if (!res.ok) { 
-              alert(json.erro || 'Erro ao processar inscrição.'); // Mostra erro do backend (ex: "Evento já terminou")
-              return; 
-          }
+          if (!res.ok) { alert(json.erro || 'Erro ao processar inscrição.'); return; }
           const inscricoes = Array.isArray(json.inscricoes) ? json.inscricoes.map(String) : [];
           modalCount.textContent = inscricoes.length;
           inscribeBtn.textContent = !!json.inscrito ? 'Remover inscrição' : 'Inscrever-se';
           try { selectedEvent.setExtendedProp('inscricoes', inscricoes); } catch(e) { selectedEvent.extendedProps = selectedEvent.extendedProps || {}; selectedEvent.extendedProps.inscricoes = inscricoes; }
+          const props = selectedEvent.extendedProps || {};
+          const limite = props.limite_participantes;
+          const inscritosCount = inscricoes.length;
+          const isInscrito = inscricoes.includes(String(currentUser.id));
+          if (limite && limite > 0 && inscritosCount >= limite && !isInscrito) {
+              inscribeBtn.textContent = `Lotado (${inscritosCount}/${limite})`;
+              inscribeBtn.disabled = true;
+          }
         } catch (err) { console.error('Erro na inscrição:', err); alert('Erro ao inscrever-se.'); }
       });
       btnDelete.addEventListener('click', async () => {
@@ -550,7 +549,8 @@ try {
         });
       }
       btnValidate.addEventListener('click', () => { if (selectedEvent) window.location.href = `validar_presenca.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
-      btnExport.addEventListener('click', () => { if (selectedEvent) window.location.href = `export_inscricoes.php?id=${encodeURIComponent(selectedEvent.id)}`; });
+      // --- LISTENER ATUALIZADO ---
+      btnManageInscricoes.addEventListener('click', () => { if (selectedEvent) window.location.href = `gerenciar_inscricoes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAddCollaborators.addEventListener('click', () => { if (selectedEvent) window.location.href = `collaborators.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAddPalestrantes.addEventListener('click', () => { if (selectedEvent) window.location.href = `palestrantes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAvaliar.addEventListener('click', () => { if (selectedEvent) window.location.href = `avaliar_evento.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
