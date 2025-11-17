@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - NotIFy</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .icon {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+    }
+
+    h1 {
+      font-size: 60px;
+      color: #045c3f;
+      font-weight: 700;
+      margin-bottom: 40px;
+    }
+
+    h1 span {
+      color: #c00000;
+    }
+
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f9f9f9;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    input {
+      width: 300px;
+      padding: 12px;
+      margin: 10px 0;
+      border: 2px solid #045c3f;
+      border-radius: 25px;
+      font-size: 16px;
+      outline: none;
+      text-align: center;
+    }
+
+    input:focus {
+      border-color: #05774f;
+    }
+
+    .btn {
+      background-color: #045c3f;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 50px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #05774f;
+    }
+
+    .link {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .link a {
+      color: #1b8600;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="icon_notify.png" 
+       alt="Calendário" 
+       class="icon" 
+       onclick="window.location.href='telainicio.html'">
+
+  <h1>Not<span>IF</span>y</h1>
+
+  <div class="login-container">
+    <input type="text" placeholder="Usuário ou E-mail" required>
+    <input type="password" placeholder="Senha" required>
+    <button class="btn" onclick="fazerLogin()">Entrar</button>
+
+    <div class="link">
+      Não tem conta? <a href="telacadastro.html">Cadastre-se</a>
+    </div>
+  </div>
+
+  <script>
+    function fazerLogin() {
+
+      alert("Login realizado com sucesso!");
+      window.location.href = "index.html"; 
+    }
+  </script>
+</body>
+</html>

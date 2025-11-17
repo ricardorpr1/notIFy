@@ -1,0 +1,8 @@
+[2025-10-14 19:51:15] POST/email: 'berguiruleiton@gmail.com' | senha_present? yes | Content-Type: application/x-www-form-urlencoded
+[2025-10-14 19:51:15] Login OK para id 2 (berguiruleiton@gmail.com)
+[2025-10-16 14:44:29] POST/email: 'fasas@gmail.com' | senha_present? yes | Content-Type: application/x-www-form-urlencoded
+[2025-10-16 14:44:29] Usuário não encontrado para email: fasas@gmail.com
+[2025-10-16 14:44:41] POST/email: 'berguiruleiton@gmail.com' | senha_present? yes | Content-Type: application/x-www-form-urlencoded
+[2025-10-16 14:44:41] Login OK para id 2 (berguiruleiton@gmail.com)
+[2025-10-16 14:55:14] POST/email: 'berguiruleiton@gmail.com' | senha_present? yes | Content-Type: application/x-www-form-urlencoded
+[2025-10-16 14:55:14] Login OK para id 2 (berguiruleiton@gmail.com)
