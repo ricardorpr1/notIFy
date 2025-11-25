@@ -1,5 +1,5 @@
 <?php
-// index.php - Página principal (COMPLETA e com link para Gerenciar Inscrições)
+// index.php - Página principal (CORRIGIDA: Cores, Permissões e Z-Index)
 session_start();
 if (!isset($_SESSION['usuario_id'])) {
   header('Location: telainicio.html');
@@ -44,26 +44,16 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
   <style>
-    /*
-     * PALETA DE CORES:
-     * - Primária (IF): #045c3f (Verde Escuro)
-     * - Secundária (Destaque): #c00000 (Vermelho/Bordo)
-     * - Fundo: #f0f2f5 (Cinza Claro Suave)
-     * - Card/Conteúdo: #ffffff (Branco Puro)
-     * - Bordas: #e0e0e0
-     */
-
     body {
       margin: 0;
-      /* Aplica a nova fonte Inter */
       font-family: 'Inter', Arial, Helvetica, sans-serif;
-      background: #f0f2f5; /* Fundo mais suave */
-      color: #333; /* Cor de texto padrão */
+      background: #f0f2f5;
+      color: #333;
     }
 
     /* ===== HEADER ===== */
     header {
-      position: fixed; /* Fixado no topo para rolar com a página */
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -72,16 +62,16 @@ try {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px 20px; /* Mais preenchimento */
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombra mais destacada */
-      z-index: 3000; /* Garante que fique acima de tudo */
+      padding: 12px 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 3000;
     }
 
     header h1 {
-      font-size: 32px; /* Fonte maior */
-      font-weight: 800; /* Mais bold */
+      font-size: 32px;
+      font-weight: 800;
       margin: 0;
-      letter-spacing: -1px; /* Ajuste para o peso da fonte */
+      letter-spacing: -1px;
     }
 
     header span {
@@ -91,18 +81,17 @@ try {
 
     /* ===== CALENDÁRIO GERAL ===== */
     #calendarContainer {
-      /* Ajuste o top para considerar o header fixo */
-      padding: 70px 20px 20px 280px; /* Espaçamento para o header e a sidebar */
-      max-width: 1300px; /* Largura máxima maior */
+      padding: 90px 20px 20px 290px; /* Espaçamento ajustado */
+      max-width: 1400px;
       margin: 0 auto;
     }
 
     #calendar {
       padding: 18px;
       background: #fff;
-      border-radius: 12px; /* Bordas mais suaves */
+      border-radius: 12px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-      margin: 0; /* Remove a margem esquerda anterior */
+      margin: 0;
     }
 
     .fc-toolbar-title {
@@ -121,14 +110,13 @@ try {
         border-color: #05774f !important;
     }
 
-
     /* ===== SIDEBAR (Navegação) ===== */
     #sidebar {
       position: fixed;
-      top: 72px; /* Abaixo do cabeçalho */
+      top: 72px;
       left: 0;
-      width: 250px; /* Ligeiramente mais largo */
-      height: calc(100vh - 72px); /* Altura total da tela menos o header */
+      width: 250px;
+      height: calc(100vh - 72px);
       background: #ffffff;
       padding: 20px 20px;
       display: flex;
@@ -144,17 +132,23 @@ try {
       background: #045c3f;
       color: #fff;
       border: none;
-      padding: 14px 20px; /* Mais preenchimento */
-      border-radius: 10px; /* Bordas mais arredondadas */
+      padding: 14px 20px;
+      border-radius: 10px;
       font-size: 16px;
       font-weight: 600;
-      display: flex;
+      display: flex; /* Importante: flex */
       align-items: center;
       gap: 12px;
       cursor: pointer;
       transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
       width: 100%;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+    }
+
+    /* Correção de Permissões: Ocultar por padrão com !important para sobrescrever o display:flex acima */
+    #addEventBtn, #permissionsBtn, #gerenciarCursosBtn {
+        display: none !important; 
     }
 
     .sidebar-btn:hover {
@@ -163,31 +157,25 @@ try {
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
 
-    /* Estilização para ícones (se usar uma biblioteca como FontAwesome) */
-    .sidebar-btn::before {
-        /* Exemplo se estivesse usando ícones: */
-        /* content: 'ÍCONE'; */
-    }
-
     /* ===== ÁREA DO USUÁRIO ===== */
     #userArea {
       position: fixed;
       top: 10px;
       right: 20px;
-      z-index: 3100; /* Acima do header */
+      z-index: 3100;
       display: flex;
       gap: 10px;
       align-items: center;
     }
 
     #profileImg {
-      width: 48px; /* Ligeiramente maior */
+      width: 48px;
       height: 48px;
       border-radius: 50%;
       object-fit: cover;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       cursor: pointer;
-      border: 3px solid #fff; /* Borda branca mais grossa para destaque */
+      border: 3px solid #fff;
       transition: 0.2s;
     }
 
@@ -204,11 +192,7 @@ try {
       cursor: pointer;
       font-weight: 600;
       transition: 0.2s;
-      display: none; /* Mantido oculto por padrão */
-    }
-
-    #logoutMini:hover {
-        background: #c9302c;
+      display: none;
     }
 
     /* ===== OVERLAY E MODAL ===== */
@@ -216,24 +200,22 @@ try {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6); /* Fundo mais escuro */
-      z-index: 4000;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 4000; /* Overlay alto */
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(4px); /* Efeito de desfoque sutil */
+      backdrop-filter: blur(4px);
     }
 
     .modal {
       background: #fff;
       width: 90%;
-      max-width: 600px; /* Reduzido para focar no conteúdo de evento */
+      max-width: 600px;
       border-radius: 12px;
-      padding: 24px; /* Mais preenchimento */
+      padding: 24px;
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
       max-height: 95vh;
       overflow-y: auto;
-      transform: scale(1);
-      transition: transform 0.3s ease-out;
     }
 
     .modal-header {
@@ -261,37 +243,22 @@ try {
       border-radius: 50%;
       cursor: pointer;
       line-height: 1;
-      transition: 0.2s;
     }
 
-    .modal-close:hover {
-        background: #ddd;
-    }
-
-    .modal-body {
-      display: block;
-    }
+    .modal-body { display: block; }
 
     .modal-image-full {
       width: 100%;
       max-width: 100%;
       height: auto;
-      aspect-ratio: 16 / 9; /* Padrão de tela */
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 8px;
       margin-top: 15px;
       border: 1px solid #e0e0e0;
     }
 
-    .modal-desc {
-      white-space: pre-wrap;
-      color: #555;
-      line-height: 1.6;
-    }
-    
-    .modal-body p strong {
-        color: #045c3f;
-    }
+    .modal-desc { white-space: pre-wrap; color: #555; line-height: 1.6; }
+    .modal-body p strong { color: #045c3f; }
 
     .modal-footer {
       margin-top: 20px;
@@ -311,68 +278,22 @@ try {
       font-weight: 600;
       font-size: 14px;
       transition: 0.2s;
-      flex-grow: 0; /* Evita que botões pequenos se estiquem muito */
     }
 
-    .btn:hover:not(:disabled) {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
+    .btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
 
     /* CORES DOS BOTÕES */
-    .btn-close {
-      background: #6c757d;
-      color: #fff;
-    }
-
-    .btn-delete {
-      background: #d9534f;
-      color: #fff;
-    }
-
-    .btn-inscribe {
-      background: #0b6bff; /* Azul vibrante */
-      color: #fff;
-    }
-
-    .btn-inscribe:disabled {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-
-    .btn-export {
-      background: #007bff;
-      color: #fff;
-    }
-
-    .btn-collab {
-      background: #6f42c1;
-      color: #fff;
-    }
-
-    .btn-edit {
-      background: #17a2b8;
-      color: #fff;
-    }
-
-    .btn-palestrante {
-      background: #fd7e14;
-      color: #fff;
-    }
-
-    .btn-avaliar {
-      background: #ffc107;
-      color: #212529;
-    }
-
-    .btn-ver-avaliacoes {
-      background: #343a40;
-      color: #fff;
-    }
-    
-    #btnValidate {
-        background: #10b981 !important;
-    }
+    .btn-close { background: #6c757d; color: #fff; }
+    .btn-delete { background: #d9534f; color: #fff; }
+    .btn-inscribe { background: #0b6bff; color: #fff; }
+    .btn-inscribe:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-export { background: #007bff; color: #fff; }
+    .btn-collab { background: #6f42c1; color: #fff; }
+    .btn-edit { background: #17a2b8; color: #fff; }
+    .btn-palestrante { background: #fd7e14; color: #fff; }
+    .btn-avaliar { background: #ffc107; color: #212529; }
+    .btn-ver-avaliacoes { background: #343a40; color: #fff; }
+    #btnValidate { background: #10b981 !important; }
     
     /* Perfil Card */
     #profileCard {
@@ -383,69 +304,13 @@ try {
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
       border: 1px solid #e0e0e0;
     }
-
-    #cardPhoto {
-        width: 90px !important;
-        height: 90px !important;
-        border-radius: 50% !important; /* Foto de perfil redonda */
-        object-fit: cover;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    #cardName {
-        font-size: 22px !important;
-        font-weight: 700 !important;
-        color: #045c3f;
-    }
-
-    #cardRole {
-        font-size: 14px !important;
-        color: #c00000 !important;
-        font-weight: 600;
-    }
+    #cardPhoto { width: 90px !important; height: 90px !important; border-radius: 50% !important; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    #cardName { font-size: 22px !important; font-weight: 700 !important; color: #045c3f; }
+    #cardRole { font-size: 14px !important; color: #c00000 !important; font-weight: 600; }
+    #profileCard p { border-bottom: 1px dotted #e0e0e0; padding-bottom: 5px; margin: 8px 0 !important; }
+    .qr-box { border-top: 1px solid #e0e0e0; padding-top: 15px; margin-top: 15px !important; }
+    #qrImage { border: 4px solid #fff !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
     
-    #profileCard p {
-        border-bottom: 1px dotted #e0e0e0;
-        padding-bottom: 5px;
-        margin: 8px 0 !important;
-    }
-    
-    #profileCard p:last-child {
-        border-bottom: none;
-    }
-
-    .qr-box {
-      border-top: 1px solid #e0e0e0;
-      padding-top: 15px;
-      margin-top: 15px !important;
-    }
-
-    #qrImage {
-        border: 4px solid #fff !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* FOOTER */
-    footer {
-      position: fixed;
-      bottom: 0; /* Alinhado ao rodapé */
-      width: 100%;
-      text-align: center;
-      font-weight: 500;
-      font-size: 14px; /* Fonte menor e menos invasiva */
-      color: #888; /* Cinza suave */
-      background: #fff;
-      padding: 5px 0;
-      border-top: 1px solid #e0e0e0;
-      user-select: none;
-      z-index: 1000;
-    }
-
-    footer span {
-      color: #c00000;
-      font-weight: 700;
-    }
-
     /* Eventos no Calendário */
     .fc-event-title-custom {
       font-weight: 700;
@@ -457,86 +322,44 @@ try {
       text-overflow: ellipsis;
       font-size: 13px;
     }
-
     .fc-event-cover-img {
-      display: none; /* Imagens de capa geralmente poluem a visualização de calendário */
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 1;
+      object-fit: cover;
+      border-radius: 4px; 
+      margin-top: 2px;
     }
-
     .fc-daygrid-event {
       padding: 0 !important;
-      border-width: 0 !important; /* A cor do evento será o background */
-      border-style: none;
-      border-radius: 8px; /* Mais arredondado */
+      border-width: 3px !important; /* Borda Grossa para mostrar a cor */
+      border-style: solid !important;
+      border-radius: 8px;
       overflow: hidden;
-      background-color: var(--fc-event-bg-color, #045c3f) !important;
-      border-color: var(--fc-event-border-color, #045c3f) !important;
+      /* A cor de fundo e borda serão setadas via JS */
     }
 
-    .fc-daygrid-event-harness {
-        margin-bottom: 3px;
-    }
-    
     /* Responsividade */
     @media (max-width: 1024px) {
-        #sidebar {
-            width: 220px;
-        }
-        #calendarContainer {
-            padding-left: 240px; /* Ajusta o padding do calendário */
-        }
+        #sidebar { width: 220px; }
+        #calendarContainer { padding-left: 240px; }
     }
-
     @media (max-width: 780px) {
-        header h1 {
-            font-size: 24px;
-        }
-        
-        #sidebar {
-            position: relative; /* Remove o fixo para celulares */
-            top: auto;
-            width: 100%;
-            height: auto;
-            border-right: none;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            padding: 10px 16px;
-            gap: 8px;
-        }
-        
-        #calendarContainer {
-            padding: 10px; /* Sem padding lateral grande */
-            padding-top: 70px; /* Mantém o espaço para o header */
-            max-width: 100%;
-        }
-        
-        #calendar {
-            padding: 10px;
-        }
-        
-        #userArea {
-            top: 8px;
-            right: 10px;
-        }
-        
-        .modal {
-            max-width: 95%;
-            padding: 15px;
-        }
-        
-        .modal-footer {
-            justify-content: center; /* Centraliza botões em telas pequenas */
-        }
-        
-        .btn {
-            width: 100%;
-            text-align: center;
-        }
-        
-        footer {
-            position: relative;
-            bottom: auto;
-            margin-top: 20px;
-        }
+        header h1 { font-size: 24px; }
+        #sidebar { position: relative; top: auto; width: 100%; height: auto; border-right: none; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); padding: 10px 16px; gap: 8px; }
+        #calendarContainer { padding: 10px; padding-top: 70px; max-width: 100%; }
+        #calendar { padding: 10px; }
+        #userArea { top: 8px; right: 10px; }
+        .modal { max-width: 95%; padding: 15px; }
+        .modal-footer { justify-content: center; }
+        .btn { width: 100%; text-align: center; }
     }
+    /* Estilos de Turma no Modal de Edição */
+    .turmas-container { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-top: 5px; max-height: 150px; overflow-y: auto; background: #fdfdfd; }
+    .turma-curso-grupo { margin-bottom: 8px; }
+    .turma-curso-grupo strong { font-size: 14px; color: #0056b3; }
+    .turma-checkbox { margin-right: 15px; }
+    .turma-checkbox input { width: auto; margin-right: 5px; }
 
   </style>
 </head>
@@ -579,23 +402,20 @@ try {
         </div>
       </div>
       <div class="modal-footer">
-  
-  <button id="btnVerAvaliacoes" class="btn btn-ver-avaliacoes" style="display:none; margin-right: 8px;" title="Ver Avaliações">👁️ Avaliações</button>
-  <button id="btnAvaliar" class="btn btn-avaliar" style="display:none;" title="Avaliar Evento">⭐ Avaliar</button>
-  
-  <span id="inscricoesEncerradasInfo" style="display:none; padding: 10px 16px; background: #6c757d; color: #fff; border-radius: 8px; font-weight: 600; margin-left: auto;">Inscrições encerradas</span>
-  
-  <button id="inscribeBtn" class="btn btn-inscribe" style="display:none; margin-left: auto;" title="Inscrever-se">✍️ Inscrever-se</button>
-  <button id="btnManageInscricoes" class="btn btn-export" style="display:none;" title="Gerenciar Inscrições">📦 Gerenciar</button>
-  <button id="btnAddPalestrantes" class="btn btn-palestrante" style="display:none;" title="Adicionar palestrantes">🗣️ Palestrantes</button>
-  <button id="btnAddCollaborators" class="btn btn-collab" style="display:none;" title="Adicionar colaboradores">🤝 Colaboradores</button>
-  <button id="btnValidate" class="btn" style="background:#10b981; color:#fff; display:none;" title="Validar presença">✅ Validar</button>
+        <button id="btnVerAvaliacoes" class="btn btn-ver-avaliacoes" style="display:none; margin-right: 8px;" title="Ver Avaliações">👁️ Avaliações</button>
+        <button id="btnAvaliar" class="btn btn-avaliar" style="display:none;" title="Avaliar Evento">⭐ Avaliar</button>
+        
+        <button id="inscribeBtn" class="btn btn-inscribe" style="display:none; margin-left: auto;" title="Inscrever-se">✍️ Inscrever-se</button>
+        <button id="btnManageInscricoes" class="btn btn-export" style="display:none;" title="Gerenciar Inscrições">📦 Gerenciar</button>
+        <button id="btnAddPalestrantes" class="btn btn-palestrante" style="display:none;" title="Adicionar palestrantes">🗣️ Palestrantes</button>
+        <button id="btnAddCollaborators" class="btn btn-collab" style="display:none;" title="Adicionar colaboradores">🤝 Colaboradores</button>
+        <button id="btnValidate" class="btn" style="background:#10b981; color:#fff; display:none;" title="Validar presença">✅ Validar</button>
 
-  <button id="btnEdit" class="btn btn-edit" style="display:none;" title="Editar">📝 Editar</button>
-  <button id="btnDelete" class="btn btn-delete" style="display:none;" title="Excluir evento">🗑️ Excluir</button>
-  
-  <button id="btnClose" class="btn btn-close" title="Fechar">❌ Fechar</button>
-</div>
+        <button id="btnEdit" class="btn btn-edit" style="display:none;" title="Editar">📝 Editar</button>
+        <button id="btnDelete" class="btn btn-delete" style="display:none;" title="Excluir evento">🗑️ Excluir</button>
+        
+        <button id="btnClose" class="btn btn-close" title="Fechar">❌ Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -662,14 +482,34 @@ try {
       }
       return [String(tryField)];
     }
+
+    // --- LÓGICA DE CORES CORRIGIDA (SEM CONVERSÃO DE STRING) ---
+    // Usamos os objetos Date do FullCalendar diretamente
     function getEventColor(start, end) {
-      const now = new Date(); const s = start ? new Date(start.replace(' ', 'T')) : null; const e = end ? new Date(end.replace(' ', 'T')) : null;
-      if (s && isNaN(s.getTime())) s = null; if (e && isNaN(e.getTime())) e = null;
+      const now = new Date(); 
+      const s = start; // Já é um objeto Date (com fuso local do navegador)
+      const e = end;   // Já é um objeto Date
+
+      if (!s) return 'blue'; // Padrão se não tiver data
+
+      // 1. Terminado: Vermelho
       if (e && now > e) { return 'red'; }
+      
+      // 2. Acontecendo: Verde
       if (s && e && now >= s && now <= e) { return 'green'; }
-      if (s && now < s) { const diffMs = s.getTime() - now.getTime(); const diffHours = diffMs / (1000 * 60 * 60); if (diffHours <= 24) { return 'goldenrod'; } else { return 'blue'; } }
-      return 'blue';
+      
+      // 3. Futuro
+      if (now < s) { 
+          const diffMs = s.getTime() - now.getTime(); 
+          const diffHours = diffMs / (1000 * 60 * 60); 
+          
+          if (diffHours <= 24) { return 'goldenrod'; } // Menos de 24h
+          else { return 'blue'; } // Mais de 24h
+      }
+      return 'blue'; // Fallback
     }
+    // --- FIM DA CORREÇÃO ---
+
     function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
     async function fetchUserAndInit() {
@@ -682,11 +522,18 @@ try {
         profileImg.src = currentUser.foto_url || 'default.jpg';
         profileImg.onerror = () => profileImg.src = 'default.jpg';
         document.getElementById('logoutMini').style.display = 'inline-block';
-        if (currentUser.role >= 1) document.getElementById('addEventBtn').style.display = 'inline-block';
-        if (currentUser.role === 2) {
-          document.getElementById('permissionsBtn').style.display = 'inline-block';
-          document.getElementById('gerenciarCursosBtn').style.display = 'inline-block';
+        
+        // --- CORREÇÃO DE PERMISSÕES ---
+        // Usa style.setProperty para forçar a visibilidade sobrescrevendo o CSS
+        if (currentUser.role >= 1) {
+            document.getElementById('addEventBtn').style.setProperty('display', 'flex', 'important');
         }
+        if (currentUser.role === 2) {
+          document.getElementById('permissionsBtn').style.setProperty('display', 'flex', 'important');
+          document.getElementById('gerenciarCursosBtn').style.setProperty('display', 'flex', 'important');
+        }
+        // --- FIM DA CORREÇÃO ---
+        
         initCalendar();
         attachProfileHandlers();
       } catch (err) { console.error('Erro ao carregar usuário:', err); alert('Não foi possível carregar dados do usuário. Recarregue a página.'); }
@@ -705,7 +552,7 @@ try {
       const btnClose = document.getElementById('btnClose');
       const inscribeBtn = document.getElementById('inscribeBtn');
       const btnDelete = document.getElementById('btnDelete');
-      const btnManageInscricoes = document.getElementById('btnManageInscricoes'); // <-- ATUALIZADO
+      const btnManageInscricoes = document.getElementById('btnManageInscricoes'); 
       const btnAddCollaborators = document.getElementById('btnAddCollaborators');
       const btnAddPalestrantes = document.getElementById('btnAddPalestrantes');
       const btnEdit = document.getElementById('btnEdit');
@@ -788,7 +635,7 @@ try {
           const isCollaborator = collaboratorsArr.includes(String(currentUser.id));
           const canManage = isDev || isCreator || isCollaborator;
 
-          btnManageInscricoes.style.display = canManage ? 'inline-block' : 'none'; // <-- ATUALIZADO
+          btnManageInscricoes.style.display = canManage ? 'inline-block' : 'none'; 
           btnDelete.style.display = canManage ? 'inline-block' : 'none';
           btnEdit.style.display = canManage ? 'inline-block' : 'none';
           btnAddPalestrantes.style.display = canManage ? 'inline-block' : 'none';
@@ -816,15 +663,18 @@ try {
           openModal();
         },
         eventDidMount: function (info) {
-          const start = info.event.start ? info.event.start.toISOString().slice(0, 19).replace('T', ' ') : (info.event.extendedProps?.data_hora_inicio ?? null);
-          const end = info.event.end ? info.event.end.toISOString().slice(0, 19).replace('T', ' ') : (info.event.extendedProps?.data_hora_fim ?? null);
-          const c = getEventColor(start, end);
-          info.el.style.borderColor = c;
-          if (info.event.extendedProps.capa_url) {
-            info.el.style.backgroundColor = '#333';
-          } else {
-            info.el.style.backgroundColor = c;
-          }
+            // Passa os objetos Date diretos, sem converter para string
+            const start = info.event.start; 
+            const end = info.event.end;
+            
+            const c = getEventColor(start, end);
+            info.el.style.borderColor = c;
+            
+            if (info.event.extendedProps.capa_url) {
+                info.el.style.backgroundColor = '#333';
+            } else {
+                info.el.style.backgroundColor = c;
+            }
         }
       });
       calendar.render();
@@ -868,12 +718,12 @@ try {
           const res = await fetch('inscrever_evento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: selectedEvent.id }) });
           const text = await res.text();
           let json = {};
-          try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { erro: 'Resposta inválida' }; }
+          try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
           if (!res.ok) { alert(json.erro || 'Erro ao processar inscrição.'); return; }
           const inscricoes = Array.isArray(json.inscricoes) ? json.inscricoes.map(String) : [];
           modalCount.textContent = inscricoes.length;
           inscribeBtn.textContent = !!json.inscrito ? 'Remover inscrição' : 'Inscrever-se';
-          try { selectedEvent.setExtendedProp('inscricoes', inscricoes); } catch (e) { selectedEvent.extendedProps = selectedEvent.extendedProps || {}; selectedEvent.extendedProps.inscricoes = inscricoes; }
+          try { selectedEvent.setExtendedProp('inscricoes', inscricoes); } catch(e) { selectedEvent.extendedProps = selectedEvent.extendedProps || {}; selectedEvent.extendedProps.inscricoes = inscricoes; }
           const props = selectedEvent.extendedProps || {};
           const limite = props.limite_participantes;
           const inscritosCount = inscricoes.length;
@@ -927,7 +777,7 @@ try {
         const editModal = document.createElement('div');
         editModal.id = 'editModal';
         editModal.className = 'modal';
-        editModal.style.zIndex = 1300;
+        editModal.style.zIndex = 5000; /* CORREÇÃO: Z-Index mais alto que o Overlay */
         editModal.style.position = 'fixed';
         editModal.style.left = '50%';
         editModal.style.top = '50%';
@@ -986,7 +836,9 @@ try {
           </form>
         `;
         document.body.appendChild(editModal);
-        overlay.style.display = 'flex';
+        // Aqui o overlay continua, mas o editModal tem zIndex maior
+        overlay.style.display = 'flex'; 
+        
         document.getElementById('closeEdit').addEventListener('click', () => { editModal.remove(); overlay.style.display = 'none'; });
         document.getElementById('cancelEdit').addEventListener('click', () => { editModal.remove(); overlay.style.display = 'none'; });
         document.getElementById('editForm').addEventListener('submit', async (e) => {
@@ -1022,7 +874,7 @@ try {
             const res = await fetch('edit_event.php', { method: 'POST', body: formData });
             const text = await res.text();
             let json;
-            try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { erro: 'Resposta inválida' }; }
+            try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
             if (!res.ok) { alert(json.erro || 'Erro ao editar evento.'); return; }
             alert(json.mensagem || 'Evento atualizado. Recarregando calendário...');
             window.location.reload();
@@ -1036,12 +888,13 @@ try {
         });
       }
       btnValidate.addEventListener('click', () => { if (selectedEvent) window.location.href = `validar_presenca.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
-      // --- LISTENER ATUALIZADO ---
-      btnManageInscricoes.addEventListener('click', () => { if (selectedEvent) window.location.href = `gerenciar_inscricoes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
+      btnExport.addEventListener('click', () => { if (selectedEvent) window.location.href = `export_inscricoes.php?id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAddCollaborators.addEventListener('click', () => { if (selectedEvent) window.location.href = `collaborators.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAddPalestrantes.addEventListener('click', () => { if (selectedEvent) window.location.href = `palestrantes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnAvaliar.addEventListener('click', () => { if (selectedEvent) window.location.href = `avaliar_evento.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
       btnVerAvaliacoes.addEventListener('click', () => { if (selectedEvent) window.location.href = `ver_avaliacoes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
+      // Adicionando o listener que faltava para o botão renomeado de gerenciar inscrições
+      btnManageInscricoes.addEventListener('click', () => { if (selectedEvent) window.location.href = `gerenciar_inscricoes.php?event_id=${encodeURIComponent(selectedEvent.id)}`; });
     } // end initCalendar
 
     function attachProfileHandlers() {
