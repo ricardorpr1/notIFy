@@ -41,6 +41,53 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Adicionar Evento - notIFy</title>
   <style>
+     header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: #045c3f;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    header img {
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    header span {
+      color: #c00000;
+    }
+
+footer {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: #045c3f;
+      user-select: none;
+    }
+
+    footer span {
+      color: #c00000;
+    }
+
+
     body { font-family: Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; }
     h2 { text-align: center; color: #333; }
     form { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto; }
@@ -65,6 +112,13 @@ try {
   </style>
 </head>
 <body>
+<header>
+    <h1>Not<span>IF</span>y</h1>
+  </header>
+<footer>
+    Not<span>IF</span>y © 2025
+  </footer>
+  <br><br><br><br>
   <h2>Adicionar Novo Evento</h2>
   
   <form id="eventoForm">

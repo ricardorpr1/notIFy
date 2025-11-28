@@ -138,6 +138,53 @@ function esc($v) { return htmlspecialchars($v ?? '', ENT_QUOTES | ENT_SUBSTITUTE
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Editar Perfil — notIFy</title>
 <style>
+   header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: #045c3f;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    header img {
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    header span {
+      color: #c00000;
+    }
+
+footer {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: #045c3f;
+      user-select: none;
+    }
+
+    footer span {
+      color: #c00000;
+    }
+
+
   body { font-family:Arial, sans-serif; background:#f4f6f8; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding: 20px 0; }
   .card { background:#fff; padding:22px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08); width:520px; max-width:95%; }
   h2 { margin:0 0 12px 0; color:#045c3f; text-align:center; }
@@ -157,6 +204,12 @@ function esc($v) { return htmlspecialchars($v ?? '', ENT_QUOTES | ENT_SUBSTITUTE
 </style>
 </head>
 <body>
+<header>
+    <h1>Not<span>IF</span>y</h1>
+  </header>
+<footer>
+    Not<span>IF</span>y © 2025
+  </footer>
   <div class="card" role="main">
     <h2>Editar perfil</h2>
     <?php if (!empty($mensagem)): ?><div class="msg sucesso"><?= esc($mensagem) ?></div><?php endif; ?>
