@@ -1,5 +1,5 @@
 <?php
-// index.php - Versão Final Restaurada e Completa
+// index.php - Versão Final: Imagens no Mobile Ativadas
 session_start();
 
 if (!isset($_SESSION['usuario_id'])) {
@@ -17,7 +17,6 @@ $DB_PASS = "108Xk:C";
 $cursos_map_json = "[]";
 $turmas_json = "[]";
 
-// Carrega cursos e turmas para o formulário de edição
 try {
     $pdo_idx = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -47,24 +46,30 @@ try {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>notIFy — Calendário</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
   <style>
-    body { margin:0; font-family: 'Inter', Arial, Helvetica, sans-serif; background:#f0f2f5; color:#333; }
+    body { margin:0; font-family: 'Inter', Arial, Helvetica, sans-serif; background:#f0f2f5; color:#333; overflow-x: hidden; }
     
     /* HEADER */
-    header { position: fixed; top: 0; left: 0; width: 100%; background-color: #045c3f; color: white; display: flex; align-items: center; justify-content: center; padding: 12px 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 3000; }
-    header h1 { font-size: 32px; font-weight: 800; margin: 0; letter-spacing: -1px; }
+    header { position: fixed; top: 0; left: 0; width: 100%; background-color: #045c3f; color: white; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 3000; }
+    header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -1px; }
     header span { color: #c00000; font-weight: 900; }
+    
+    /* Menu Hamburger (Mobile) */
+    #mobileMenuBtn {
+        display: none; /* Escondido no Desktop */
+        position: absolute; left: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;
+    }
 
     /* LAYOUT PRINCIPAL */
-    #calendarContainer { padding: 90px 20px 20px 290px; max-width: 1400px; margin: 0 auto; }
+    #calendarContainer { padding: 80px 20px 20px 290px; max-width: 1400px; margin: 0 auto; transition: padding 0.3s; }
     #calendar { padding: 18px; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); margin: 0; }
 
     /* SIDEBAR */
-    #sidebar { position: fixed; top: 72px; left: 0; width: 250px; height: calc(100vh - 72px); background: #ffffff; padding: 20px 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e0e0e0; box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08); z-index: 2000; }
+    #sidebar { position: fixed; top: 60px; left: 0; width: 250px; height: calc(100vh - 60px); background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e0e0e0; box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08); z-index: 2000; transition: transform 0.3s ease; }
     .sidebar-btn { background: #045c3f; color: #fff; border: none; padding: 14px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s; width: 100%; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); box-sizing: border-box; }
     .sidebar-btn:hover { background: #05774f; transform: translateY(-2px); }
     
@@ -72,25 +77,27 @@ try {
     #addEventBtn, #permissionsBtn, #gerenciarCursosBtn { display: none !important; }
 
     /* USER AREA */
-    #userArea { position: fixed; top: 10px; right: 20px; z-index: 3100; display: flex; gap: 10px; align-items: center; }
-    #profileImg { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 3px solid #fff; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    #userArea { position: fixed; top: 8px; right: 15px; z-index: 3100; display: flex; gap: 10px; align-items: center; }
+    #profileImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid #fff; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     #profileImg:hover { opacity: 0.8; }
-    #logoutMini { background: #d9534f; color: #fff; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: none; }
+    #logoutMini { background: #d9534f; color: #fff; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: none; font-size: 13px; }
 
     /* MODAIS */
-    #overlay, #profileOverlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    .modal { background: #fff; width: 90%; max-width: 600px; border-radius: 12px; padding: 24px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35); max-height: 95vh; overflow-y: auto; }
+    #overlay, #profileOverlay, #sidebarBackdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #sidebarBackdrop { z-index: 1900; } 
+    
+    .modal { background: #fff; width: 90%; max-width: 600px; border-radius: 12px; padding: 24px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35); max-height: 90vh; overflow-y: auto; position: relative; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px; }
-    .modal-title { margin: 0; font-size: 24px; font-weight: 700; color: #045c3f; }
-    .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; }
+    .modal-title { margin: 0; font-size: 20px; font-weight: 700; color: #045c3f; }
+    .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; padding: 0; }
     
     .modal-body { display: block; margin-top:12px; }
     .modal-image-full { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-top: 15px; border: 1px solid #e0e0e0; object-fit: contain; }
-    .modal-desc { white-space: pre-wrap; color: #555; line-height: 1.6; margin-top: 10px; }
+    .modal-desc { white-space: pre-wrap; color: #555; line-height: 1.6; margin-top: 10px; font-size: 15px; }
     .modal-body p strong { color: #045c3f; }
 
     .modal-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-    .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+    .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
     .btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
     
     /* Cores dos Botões */
@@ -107,42 +114,59 @@ try {
     #btnValidate { background: #10b981 !important; }
 
     /* Perfil Card */
-    #profileCard { background: #fff; width: 360px; border-radius: 12px; padding: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.35); border: 1px solid #e0e0e0; }
-    #cardPhoto { width: 90px !important; height: 90px !important; border-radius: 50%; object-fit: cover; }
-    #cardName { font-size: 22px; font-weight: 700; color: #045c3f; }
-    #cardRole { font-size: 14px; color: #c00000; font-weight: 600; }
-    .qr-box { border-top: 1px solid #e0e0e0; padding-top: 15px; margin-top: 15px !important; }
+    #profileCard { background: #fff; width: 360px; max-width: 90%; border-radius: 12px; padding: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.35); border: 1px solid #e0e0e0; }
+    #cardPhoto { width: 80px !important; height: 80px !important; border-radius: 50%; object-fit: cover; }
+    #cardName { font-size: 20px; font-weight: 700; color: #045c3f; }
+    #cardRole { font-size: 13px; color: #c00000; font-weight: 600; }
+    .qr-box { border-top: 1px solid #e0e0e0; padding-top: 15px; margin-top: 15px !important; text-align: center; }
 
-    /* Eventos no Calendário */
+    /* Eventos no Calendário (Desktop) */
     .fc-event-title-custom { font-weight: 700; color: #fff; text-shadow: 0 0 3px rgba(0,0,0,0.8); padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
-    .fc-event-cover-img { width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 4px; margin-top: 2px; }
+    .fc-event-cover-img { width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 4px; margin-top: 2px; display: block; }
+    
+    /* Estilos Específicos para Grade */
     .fc-daygrid-event { padding: 0 !important; border-width: 3px !important; border-style: solid !important; border-radius: 8px; overflow: hidden; }
+
+    /* Estilos Específicos para Lista (Mobile) */
+    .fc-list-event-title .fc-event-cover-img {
+        margin-top: 8px;
+        max-width: 100%;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
     /* CSS para edição de turmas */
     .turmas-container { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-top: 5px; max-height: 150px; overflow-y: auto; background: #fdfdfd; }
     .turma-curso-grupo { margin-bottom: 8px; }
     .turma-curso-grupo strong { font-size: 14px; color: #0056b3; }
-    .turma-checkbox { margin-right: 15px; }
+    .turma-checkbox { margin-right: 15px; display: inline-block; }
     .turma-checkbox input { width: auto; margin-right: 5px; }
     
-    @media (max-width: 1024px) { #sidebar { width: 220px; } #calendarContainer { padding-left: 240px; } }
-    @media (max-width: 780px) {
-        header h1 { font-size: 24px; }
-        #sidebar { position: relative; top: auto; width: 100%; height: auto; border-right: none; padding: 10px 16px; gap: 8px; }
-        #calendarContainer { padding: 10px; padding-top: 70px; }
-        #userArea { top: 8px; right: 10px; }
-        .modal { max-width: 95%; padding: 15px; }
+    /* ================= MOBILE ================= */
+    @media (max-width: 768px) {
+        #mobileMenuBtn { display: block; }
+        #sidebar { transform: translateX(-100%); width: 260px; box-shadow: none; }
+        #sidebar.active { transform: translateX(0); box-shadow: 4px 0 16px rgba(0, 0, 0, 0.2); }
+        #calendarContainer { padding: 80px 15px 20px 15px; width: 100%; box-sizing: border-box; }
+        #calendar { padding: 10px; }
+        .fc-toolbar { flex-direction: column; gap: 10px; }
+        .fc-toolbar-title { font-size: 20px !important; }
+        .modal { width: 95%; padding: 15px; margin: 10px; max-height: 85vh; }
         .modal-footer { justify-content: center; }
-        .btn { width: 100%; text-align: center; }
+        .btn { width: 100%; margin-bottom: 5px; text-align: center; }
+        #profileCard { width: 95%; }
     }
   </style>
 </head>
 
 <header>
+  <button id="mobileMenuBtn">☰</button>
   <h1>Not<span>IF</span>y</h1>
 </header>
 
 <body>
+  <div id="sidebarBackdrop"></div>
+
   <div id="sidebar">
     <button class="sidebar-btn" id="meusEventosBtn">📅 Meus Eventos</button>
     <button class="sidebar-btn" id="addEventBtn">➕ Adicionar Evento</button>
@@ -228,12 +252,13 @@ try {
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
     const CursosTurmasData = <?php echo $cursos_map_json; ?>;
-
     let currentUser = null;
     let calendar = null;
     let selectedEvent = null;
 
-    // Utilitários
+    // Detecta se é mobile
+    const isMobile = window.innerWidth <= 768;
+
     function formatDateTimeForDisplay(s) { if (!s) return '—'; const d = new Date(s.replace(' ', 'T')); if (isNaN(d)) return s; return d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }); }
     function toInputDatetimeLocal(s) { if (!s) return ''; const t = s.replace(' ', 'T'); return t.length >= 16 ? t.slice(0, 16) : t; }
     function parseJsonArrayProp(props, key) {
@@ -245,26 +270,23 @@ try {
       return [String(tryField)];
     }
     
-    // Lógica de Cores
     function getEventColor(start, end) {
       const now = new Date(); 
       const s = start; 
       const e = end;
       if (!s) return 'blue';
-
       if (e && now > e) return 'red'; // Terminado
       if (s && e && now >= s && now <= e) return 'green'; // Acontecendo
       if (now < s) { 
           const diffMs = s.getTime() - now.getTime(); 
           const diffHours = diffMs / (1000 * 60 * 60); 
-          if (diffHours <= 24) return 'goldenrod'; // Em breve
-          return 'blue'; // Futuro
+          if (diffHours <= 24) return 'goldenrod'; 
+          return 'blue'; 
       }
       return 'blue';
     }
     function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-    // --- FETCH USER & INIT ---
     async function fetchUserAndInit() {
       try {
         const res = await fetch('get_user.php', { cache: 'no-store' });
@@ -272,10 +294,8 @@ try {
             if (res.status === 401) { window.location.href = 'telainicio.html'; return; }
             throw new Error('Falha na comunicação com o servidor.'); 
         }
-        
         const data = await res.json();
         if (data.erro) throw new Error(data.erro);
-
         currentUser = data;
         
         const profileImg = document.getElementById('profileImg');
@@ -283,22 +303,32 @@ try {
         profileImg.onerror = () => profileImg.src = 'default.jpg';
         document.getElementById('logoutMini').style.display = 'inline-block';
         
-        // --- PERMISSÕES ---
-        if (currentUser.role >= 1) {
-            document.getElementById('addEventBtn').style.setProperty('display', 'flex', 'important');
-        }
+        if (currentUser.role >= 1) document.getElementById('addEventBtn').style.setProperty('display', 'flex', 'important');
         if (currentUser.role === 2) {
             document.getElementById('permissionsBtn').style.setProperty('display', 'flex', 'important');
             document.getElementById('gerenciarCursosBtn').style.setProperty('display', 'flex', 'important');
         }
-        
         initCalendar();
         attachProfileHandlers();
-        
+        initMobileMenu();
       } catch (err) { 
           console.error('Erro ao carregar usuário:', err); 
           alert('Não foi possível carregar dados do usuário. Verifique o console para mais detalhes.'); 
       }
+    }
+    
+    function initMobileMenu() {
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        
+        function toggleMenu() {
+            sidebar.classList.toggle('active');
+            backdrop.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+        }
+        
+        menuBtn.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu); 
     }
 
     function initCalendar() {
@@ -324,16 +354,22 @@ try {
       overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
       calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView: 'dayGridMonth',
+        initialView: isMobile ? 'listMonth' : 'dayGridMonth', 
         locale: 'pt-br',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+        headerToolbar: { 
+            left: isMobile ? 'prev,next' : 'prev,next today', 
+            center: 'title', 
+            right: isMobile ? 'dayGridMonth,listMonth' : 'dayGridMonth,timeGridWeek,timeGridDay' 
+        },
         eventDisplay: 'block',
         eventContent: function (arg) {
           let html = '<div class="fc-event-title-custom">' + escapeHtml(arg.event.title) + '</div>';
           const capa = arg.event.extendedProps.capa_url;
+          // --- CORREÇÃO: Removemos a checagem !isMobile ---
           if (capa) {
             html += '<img class="fc-event-cover-img" src="' + escapeHtml(capa) + '" alt="Capa">';
           }
+          // --- FIM CORREÇÃO ---
           return { html: html };
         },
         eventClick: async function (info) {
@@ -364,7 +400,6 @@ try {
              if (now > selectedEvent.end) eventoTerminou = true;
           }
 
-          // BOTÃO INSCREVER-SE
           if (currentUser && currentUser.id) {
             inscribeBtn.style.display = 'inline-block';
             if (eventoTerminou) {
@@ -386,7 +421,6 @@ try {
             inscribeBtn.style.display = 'none';
           }
 
-          // PERMISSÕES DE GESTÃO
           const isDev = (currentUser && currentUser.role === 2);
           const isCreator = (createdBy !== null && String(createdBy) === String(currentUser.id));
           const isCollaborator = collaboratorsArr.includes(String(currentUser.id));
@@ -399,24 +433,15 @@ try {
           btnAddPalestrantes.style.display = displayStyle;
           btnAddCollaborators.style.display = (isDev || isCreator) ? 'inline-block' : 'none';
 
-          if (canManage && isHappeningNow) {
-            btnValidate.style.display = 'inline-block';
-          } else {
-            btnValidate.style.display = 'none';
-          }
+          if (canManage && isHappeningNow) btnValidate.style.display = 'inline-block';
+          else btnValidate.style.display = 'none';
 
-          if (isDev || isCreator) {
-            btnVerAvaliacoes.style.display = 'inline-block';
-          } else {
-            btnVerAvaliacoes.style.display = 'none';
-          }
-          if (eventoTerminou) {
-            btnAvaliar.style.display = 'inline-block';
-          } else {
-            btnAvaliar.style.display = 'none';
-          }
+          if (isDev || isCreator) btnVerAvaliacoes.style.display = 'inline-block';
+          else btnVerAvaliacoes.style.display = 'none';
 
-          // IMAGEM COMPLETA
+          if (eventoTerminou) btnAvaliar.style.display = 'inline-block';
+          else btnAvaliar.style.display = 'none';
+
           const imageUrlFull = props.imagem_completa_url;
           if (imageUrlFull) { 
               modalImageFull.src = imageUrlFull; 
@@ -430,27 +455,21 @@ try {
         eventDidMount: function (info) {
           const c = getEventColor(info.event.start, info.event.end);
           info.el.style.borderColor = c;
-          if (info.event.extendedProps.capa_url) {
-            info.el.style.backgroundColor = '#333';
-          } else {
-            info.el.style.backgroundColor = c;
-          }
+          if (info.event.extendedProps.capa_url) info.el.style.backgroundColor = '#333';
+          else info.el.style.backgroundColor = c;
         }
       });
       
       calendar.render();
       loadEvents();
 
-      // HANDLERS DE BOTÕES DO MODAL
       inscribeBtn.onclick = async () => {
           if (!selectedEvent) return;
           try {
              const res = await fetch('inscrever_evento.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: selectedEvent.id }) });
              const json = await res.json();
              if(!res.ok) { alert(json.erro || 'Erro.'); return; }
-             loadEvents();
-             closeModal(); 
-             alert(json.mensagem);
+             loadEvents(); closeModal(); alert(json.mensagem);
           } catch(e) { alert('Erro de rede.'); }
       };
 
@@ -460,7 +479,6 @@ try {
           loadEvents(); closeModal();
       };
       
-      // AQUI ESTÁ A LÓGICA DE ABRIR O MODAL DE EDIÇÃO
       btnEdit.onclick = () => {
         if (!selectedEvent) return;
         const props = selectedEvent.extendedProps || {};
@@ -492,18 +510,12 @@ try {
           const res = await fetch('list_events.php', { cache: 'no-store' });
           const data = await res.json();
           calendar.removeAllEvents();
-          if (Array.isArray(data)) {
-              data.forEach(ev => {
-                  calendar.addEvent(ev);
-              });
-          }
+          if (Array.isArray(data)) { data.forEach(ev => { calendar.addEvent(ev); }); }
         } catch (err) { console.error('Erro ao carregar eventos'); }
     }
 
     function attachProfileHandlers() {
       const overlay = document.getElementById('profileOverlay');
-      const card = document.getElementById('profileCard');
-      
       document.getElementById('profileImg').onclick = async () => {
          if(currentUser) {
              document.getElementById('cardName').textContent = currentUser.nome;
@@ -512,121 +524,82 @@ try {
              document.getElementById('cardCPF').textContent = currentUser.cpf || '-';
              document.getElementById('cardPhone').textContent = currentUser.telefone || '-';
              document.getElementById('cardBirth').textContent = currentUser.data_nascimento || '-';
-             
              const alunoInfo = document.getElementById('cardAlunoInfo');
              if (currentUser.turma_id) {
                  document.getElementById('cardRA').textContent = currentUser.registro_academico || '-';
                  document.getElementById('cardCurso').textContent = currentUser.curso_nome || '-';
                  document.getElementById('cardTurma').textContent = currentUser.turma_nome || '-';
                  alunoInfo.style.display = 'block';
-             } else {
-                 alunoInfo.style.display = 'none';
-             }
+             } else { alunoInfo.style.display = 'none'; }
          }
          overlay.style.display = 'flex';
       };
-
       document.getElementById('closeProfileBtn').onclick = () => overlay.style.display = 'none';
       overlay.onclick = (e) => { if(e.target === overlay) overlay.style.display = 'none'; };
       document.getElementById('editProfileBtn').onclick = () => location.href = 'perfil_editar.php';
       document.getElementById('generateQRBtn').onclick = () => {
           const cpf = currentUser.cpf.replace(/\D/g,'');
           if(cpf.length !== 11) { alert('CPF inválido para QR.'); return; }
-          const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${cpf}`;
-          const img = document.getElementById('qrImage');
-          img.src = url; img.style.display = 'block';
-          const link = document.getElementById('downloadQR');
-          link.href = url; link.style.display = 'inline-block';
+          const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(cpf)}`;
+          document.getElementById('qrImage').src = url; 
+          document.getElementById('qrImage').style.display = 'block';
+          document.getElementById('downloadQR').href = url; 
+          document.getElementById('downloadQR').style.display = 'inline-block';
       };
-      
       document.getElementById('logoutMini').onclick = async () => {
           await fetch('logout.php', { method: 'POST' });
           location.href = 'telainicio.html';
       };
     }
 
-    // --- FUNÇÃO openEditModal RESTAURADA (COMPLETA) ---
     function openEditModal(prefill) {
         const existing = document.getElementById('editModal');
         if (existing) existing.remove();
         const editModal = document.createElement('div');
         editModal.id = 'editModal';
         editModal.className = 'modal';
-        // IMPORTANTE: Z-Index alto para ficar acima do overlay
         editModal.style.zIndex = 5000; 
         editModal.style.position = 'fixed'; editModal.style.left = '50%'; editModal.style.top = '50%';
         editModal.style.transform = 'translate(-50%, -50%)'; editModal.style.width = '450px';
         
-        // Constrói os checkboxes de turma
         let turmasHtml = '';
         CursosTurmasData.forEach(curso => {
             turmasHtml += `<div class="turma-curso-grupo"><strong>${escapeHtml(curso.nome)}</strong><br>`;
             if (curso.turmas.length > 0) {
                 curso.turmas.forEach(turma => {
                     const isChecked = prefill.turmas_permitidas.includes(String(turma.id));
-                    turmasHtml += `
-                        <label class="turma-checkbox">
-                            <input type="checkbox" name="turmas_permitidas[]" value="${turma.id}" ${isChecked ? 'checked' : ''}>
-                            ${escapeHtml(turma.nome_exibicao)}
-                        </label>`;
+                    turmasHtml += `<label class="turma-checkbox"><input type="checkbox" name="turmas_permitidas[]" value="${turma.id}" ${isChecked ? 'checked' : ''}> ${escapeHtml(turma.nome_exibicao)}</label>`;
                 });
-            } else {
-                turmasHtml += `<small>Nenhuma turma cadastrada</small>`;
-            }
+            } else { turmasHtml += `<small>Nenhuma turma cadastrada</small>`; }
             turmasHtml += `</div>`;
         });
-        // Checkbox Público Externo
         const isExternoChecked = prefill.turmas_permitidas.includes("0");
-        turmasHtml += `
-            <hr style="border:0; border-top:1px dashed #ccc; margin: 8px 0;">
-            <label class="turma-checkbox">
-                <input type="checkbox" name="publico_externo" value="1" ${isExternoChecked ? 'checked' : ''}>
-                <strong>Público Externo (Não-alunos)</strong>
-            </label>`;
-
+        turmasHtml += `<hr style="border:0; border-top:1px dashed #ccc; margin: 8px 0;"><label class="turma-checkbox"><input type="checkbox" name="publico_externo" value="1" ${isExternoChecked ? 'checked' : ''}> <strong>Público Externo (Não-alunos)</strong></label>`;
+        
         editModal.innerHTML = `
           <form id="editForm" style="max-height: 85vh; overflow-y: auto; padding-right: 5px;">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <h3 style="margin:0">Editar evento</h3>
-              <button type="button" id="closeEdit" style="background:none;border:none;font-size:20px;cursor:pointer">&times;</button>
-            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Editar evento</h3><button type="button" id="closeEdit" style="background:none;border:none;font-size:20px;cursor:pointer">&times;</button></div>
             <div style="margin-top:10px">
               <label>Título:<br/><input id="edit_title" name="nome" style="width:100%;padding:6px;margin-bottom:5px;" value="${escapeHtml(prefill.title||'')}"></label>
               <label>Início:<br/><input id="edit_start" name="data_hora_inicio" type="datetime-local" style="width:100%;padding:6px;margin-bottom:5px;" value="${toInputDatetimeLocal(prefill.start||'')}"></label>
               <label>Término:<br/><input id="edit_end" name="data_hora_fim" type="datetime-local" style="width:100%;padding:6px;margin-bottom:5px;" value="${toInputDatetimeLocal(prefill.end||'')}"></label>
               <label>Local:<br/><input id="edit_local" name="local" style="width:100%;padding:6px;margin-bottom:5px;" value="${escapeHtml(prefill.local||'')}"></label>
               <label>Descrição:<br/><textarea id="edit_desc" name="descricao" style="width:100%;padding:6px;margin-bottom:5px;">${escapeHtml(prefill.description||'')}</textarea></label>
-              
-              <label>Nova Imagem de Capa (3:1):<br/>
-                <span style="font-size:11px;color:#666">Atual: ${prefill.capa_url ? 'Definida' : 'Nenhuma'}</span>
-                <input id="edit_capa_upload" name="capa_upload" type="file" style="width:100%;padding:6px;margin-bottom:5px;" accept="image/*"></label>
-              
-              <label>Nova Imagem Completa (Modal):<br/>
-                <span style="font-size:11px;color:#666">Atual: ${prefill.imagem_completa_url ? 'Definida' : 'Nenhuma'}</span>
-                <input id="edit_img_full_upload" name="imagem_completa_upload" type="file" style="width:100%;padding:6px;margin-bottom:5px;" accept="image/*"></label>
-              
+              <label>Nova Capa (3:1):<br/><span style="font-size:11px;color:#666">Atual: ${prefill.capa_url ? 'Definida' : 'Nenhuma'}</span><input id="edit_capa_upload" name="capa_upload" type="file" style="width:100%;padding:6px;margin-bottom:5px;" accept="image/*"></label>
+              <label>Nova Imagem Completa:<br/><span style="font-size:11px;color:#666">Atual: ${prefill.imagem_completa_url ? 'Definida' : 'Nenhuma'}</span><input id="edit_img_full_upload" name="imagem_completa_upload" type="file" style="width:100%;padding:6px;margin-bottom:5px;" accept="image/*"></label>
               <label>Limite participantes:<br/><input id="edit_limit" name="limite_participantes" type="number" min="0" style="width:100%;padding:6px;margin-bottom:5px;" value="${prefill.limite_participantes || ''}"></label>
-              
               <label style="display:block; margin-top:10px; margin-bottom:5px;">Turmas Permitidas</label>
               <div class="turmas-container">${turmasHtml}</div>
-              
-              <div style="text-align:right;margin-top:15px">
-                <button type="button" id="cancelEdit" class="btn btn-close" style="margin-right:6px">Cancelar</button>
-                <button type="submit" id="saveEdit" class="btn btn-edit">Salvar</button>
-              </div>
+              <div style="text-align:right;margin-top:15px"><button type="button" id="cancelEdit" class="btn btn-close" style="margin-right:6px">Cancelar</button><button type="submit" id="saveEdit" class="btn btn-edit">Salvar</button></div>
             </div>
           </form>
         `;
-        
         document.body.appendChild(editModal);
-        // Overlay visível, mas modal de edição por cima
         document.getElementById('overlay').style.display = 'flex';
 
-        // Handlers do Modal
         const closeFn = () => { editModal.remove(); };
         document.getElementById('closeEdit').onclick = closeFn;
         document.getElementById('cancelEdit').onclick = closeFn;
-
         document.getElementById('editForm').onsubmit = async (e) => {
           e.preventDefault();
           const formData = new FormData();
@@ -637,51 +610,28 @@ try {
           formData.append('local', document.getElementById('edit_local').value.trim());
           formData.append('descricao', document.getElementById('edit_desc').value.trim());
           formData.append('limite_participantes', document.getElementById('edit_limit').value);
-          
           const capaFile = document.getElementById("edit_capa_upload").files[0];
           if (capaFile) formData.append('capa_upload', capaFile);
           const imgFullFile = document.getElementById("edit_img_full_upload").files[0];
           if (imgFullFile) formData.append('imagem_completa_upload', imgFullFile);
-
-          // Checkboxes
           const form = e.target;
           const turmasCheckboxes = form.querySelectorAll('input[name="turmas_permitidas[]"]:checked');
-          turmasCheckboxes.forEach(chk => {
-              formData.append('turmas_permitidas[]', chk.value);
-          });
-          if (form.querySelector('input[name="publico_externo"]:checked')) {
-              formData.append('publico_externo', '1');
-          }
-
-          if (!formData.get('nome') || !formData.get('data_hora_inicio') || !formData.get('data_hora_fim')) {
-            alert('Preencha título, início e término.');
-            return;
-          }
-          
+          turmasCheckboxes.forEach(chk => { formData.append('turmas_permitidas[]', chk.value); });
+          if (form.querySelector('input[name="publico_externo"]:checked')) { formData.append('publico_externo', '1'); }
+          if (!formData.get('nome') || !formData.get('data_hora_inicio') || !formData.get('data_hora_fim')) { alert('Preencha título, início e término.'); return; }
           const saveBtn = document.getElementById('saveEdit');
-          saveBtn.disabled = true;
-          saveBtn.textContent = 'Salvando...';
-
+          saveBtn.disabled = true; saveBtn.textContent = 'Salvando...';
           try {
             const res = await fetch('edit_event.php', { method: 'POST', body: formData });
             const text = await res.text();
-            let json;
-            try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida do servidor' }; }
+            let json; try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
             if (!res.ok) { alert(json.erro || 'Erro ao editar evento.'); return; }
-            
             alert(json.mensagem || 'Evento atualizado. Recarregando calendário...');
             window.location.reload(); 
-          } catch (err) {
-            console.error('Erro salvar edição:', err);
-            alert('Erro ao salvar edição.');
-          } finally {
-             saveBtn.disabled = false;
-             saveBtn.textContent = 'Salvar';
-          }
+          } catch (err) { console.error('Erro salvar edição:', err); alert('Erro ao salvar edição.'); } finally { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
         };
     }
 
-    // Iniciar
     document.addEventListener('DOMContentLoaded', () => {
       fetchUserAndInit();
       document.getElementById('meusEventosBtn').onclick = () => location.href = 'meus_eventos.php';
