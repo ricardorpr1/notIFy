@@ -16,7 +16,7 @@ if ($role !== 2) {
     exit;
 }
 
-// DB config - ajuste se preciso
+// DB config
 $host = "127.0.0.1";
 $port = "3306";
 $dbname = "notify_db";
@@ -34,9 +34,9 @@ try {
     exit;
 }
 
-// buscar usuários ordenados por id
+// buscar usuários
 try {
-    $stmt = $pdo->query("SELECT id, nome, email, cpf, registro_academico, role FROM usuarios ORDER BY id ASC");
+    $stmt = $pdo->query("SELECT id, nome, email, cpf, registro_academico, role FROM usuarios ORDER BY nome ASC");
     $users = $stmt->fetchAll();
 } catch (PDOException $e) {
     http_response_code(500);
@@ -48,52 +48,175 @@ try {
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1.0, user-scalable=no" />
 <title>Permissões — notIFy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#f6f7fb}
-  .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.06);max-width:1000px;margin:0 auto}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-  th{background:#fafafa}
-  select{padding:6px;border-radius:6px;border:1px solid #ccc}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .btn-back{background:#6c757d;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
-  .status{margin-left:8px;font-size:13px;color:#555}
+  body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; background: #f0f2f5; color: #333; }
+  
+  .card { 
+      background: #fff; 
+      padding: 24px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+      max-width: 1100px; 
+      margin: 0 auto; 
+  }
+
+  .topbar { 
+      display: flex; 
+      flex-wrap: wrap; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      gap: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+  }
+  .topbar h2 { margin: 0; font-size: 24px; color: #045c3f; }
+  
+  .btn-back { 
+      background: #6c757d; color: #fff; 
+      padding: 10px 16px; border: none; 
+      border-radius: 8px; cursor: pointer; 
+      font-weight: 600; text-decoration: none;
+      font-size: 14px;
+  }
+  .status { margin-left: 10px; font-size: 13px; color: #666; font-weight: 500; }
+
+  /* Filtro de Pesquisa */
+  .search-container { margin-bottom: 20px; }
+  #searchInput {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+  }
+
+  /* Tabela Desktop */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
+  th { background: #f8f9fa; font-weight: 700; color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { font-size: 14px; }
+  
+  /* Controles dentro da tabela */
+  select { 
+      padding: 8px; 
+      border-radius: 6px; 
+      border: 1px solid #ccc; 
+      font-family: inherit;
+      width: 100%;
+      max-width: 160px;
+  }
+  .saveBtn { 
+      background: #045c3f; color: #fff; 
+      border: none; padding: 8px 14px; 
+      border-radius: 6px; cursor: pointer; 
+      font-weight: 600; transition: 0.2s;
+  }
+  .saveBtn:hover { background: #05774f; }
+  .saveBtn:disabled { background: #ccc; cursor: not-allowed; }
+  .msg { font-size: 12px; margin-left: 8px; display: inline-block; min-width: 60px; }
+
+  /* === MODO MOBILE (CARD VIEW) === */
+  @media (max-width: 768px) {
+      body { padding: 10px; }
+      .card { padding: 15px; }
+      .topbar { flex-direction: column; align-items: stretch; text-align: center; }
+      .topbar div { display: flex; flex-direction: column; gap: 10px; }
+      
+      /* Esconde o cabeçalho da tabela */
+      thead { display: none; }
+      
+      /* Transforma linhas em blocos (cards) */
+      tr { 
+          display: block; 
+          margin-bottom: 15px; 
+          border: 1px solid #e0e0e0; 
+          border-radius: 10px; 
+          background: #fff;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+          padding: 15px;
+      }
+      
+      /* Transforma células em linhas flex */
+      td { 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center; 
+          padding: 8px 0; 
+          border-bottom: 1px dashed #eee;
+          font-size: 14px;
+      }
+      
+      td:last-child { border-bottom: none; flex-direction: column; gap: 10px; margin-top: 10px; }
+      
+      /* Adiciona labels via data-label */
+      td::before {
+          content: attr(data-label);
+          font-weight: 700;
+          color: #555;
+          margin-right: 15px;
+          min-width: 80px;
+      }
+
+      /* Ajustes de controles no mobile */
+      select { max-width: 100%; text-align: right; border: none; background: transparent; font-weight: 600; color: #045c3f; }
+      .saveBtn { width: 100%; padding: 12px; font-size: 16px; margin-top: 5px; }
+      
+      /* Ocultar ID no mobile para economizar espaço */
+      td[data-label="ID"] { display: none; }
+  }
 </style>
 </head>
 <body>
   <div class="card">
     <div class="topbar">
-      <h2>Gerenciar permissões de usuários</h2>
+      <h2>Gerenciar Permissões</h2>
       <div>
-        <button class="btn-back" onclick="location.href='index.php'">Voltar</button>
-        <span class="status">Logado como: <?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'DEV') ?></span>
+        <span class="status">Logado como: <strong><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'DEV') ?></strong></span>
+        <a href="index.php" class="btn-back">Voltar ao Calendário</a>
       </div>
     </div>
 
-    <p>Altere o papel (role) de cada usuário. 0 = Usuário, 1 = Organizador, 2 = Dev.</p>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Buscar por nome, email ou CPF...">
+    </div>
 
-    <table>
+    <table id="usersTable">
       <thead>
-        <tr><th>ID</th><th>Nome</th><th>E-mail</th><th>CPF</th><th>RA</th><th>Permissão</th><th>Ação</th></tr>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>CPF / RA</th>
+          <th>Permissão Atual</th>
+          <th>Ação</th>
+        </tr>
       </thead>
       <tbody id="usersTbody">
         <?php foreach ($users as $u): ?>
           <tr data-user-id="<?= (int)$u['id'] ?>">
-            <td><?= (int)$u['id'] ?></td>
-            <td><?= htmlspecialchars($u['nome']) ?></td>
-            <td><?= htmlspecialchars($u['email']) ?></td>
-            <td><?= htmlspecialchars($u['cpf']) ?></td>
-            <td><?= htmlspecialchars($u['registro_academico']) ?></td>
-            <td>
+            <td data-label="ID"><?= (int)$u['id'] ?></td>
+            <td data-label="Nome"><strong><?= htmlspecialchars($u['nome']) ?></strong></td>
+            <td data-label="E-mail"><?= htmlspecialchars($u['email']) ?></td>
+            <td data-label="CPF / RA">
+                <?= htmlspecialchars($u['cpf']) ?>
+                <?= !empty($u['registro_academico']) ? '<br><small style="color:#666">RA: '.htmlspecialchars($u['registro_academico']).'</small>' : '' ?>
+            </td>
+            <td data-label="Permissão">
               <select class="roleSelect">
                 <option value="0" <?= intval($u['role'])===0 ? 'selected' : '' ?>>Usuário (0)</option>
                 <option value="1" <?= intval($u['role'])===1 ? 'selected' : '' ?>>Organizador (1)</option>
                 <option value="2" <?= intval($u['role'])===2 ? 'selected' : '' ?>>Dev (2)</option>
               </select>
             </td>
-            <td><button class="saveBtn">Salvar</button> <span class="msg" style="margin-left:8px"></span></td>
+            <td data-label="Ação">
+                <button class="saveBtn">Salvar Alteração</button> 
+                <span class="msg"></span>
+            </td>
           </tr>
         <?php endforeach; ?>
       </tbody>
@@ -102,42 +225,65 @@ try {
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const rows = document.querySelectorAll('#usersTbody tr');
-  rows.forEach(row => {
+  // Filtro de Pesquisa
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('#usersTbody tr');
+
+  searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      tableRows.forEach(row => {
+          const text = row.innerText.toLowerCase();
+          row.style.display = text.includes(term) ? '' : 'none';
+      });
+  });
+
+  // Lógica de Salvar
+  tableRows.forEach(row => {
     const uid = row.getAttribute('data-user-id');
     const select = row.querySelector('.roleSelect');
     const btn = row.querySelector('.saveBtn');
     const msg = row.querySelector('.msg');
 
+    // Detectar mudança para destacar
+    select.addEventListener('change', () => {
+        row.style.background = '#fff8e1'; // Highlight amarelo
+    });
+
     btn.addEventListener('click', async () => {
       const newRole = parseInt(select.value, 10);
-      msg.textContent = 'Salvando...';
-      msg.style.color = '#333';
+      
+      const originalText = btn.textContent;
+      btn.textContent = 'Salvando...';
       btn.disabled = true;
+      msg.textContent = '';
+      
       try {
         const res = await fetch('update_role.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: parseInt(uid,10), role: newRole })
         });
+        
         const text = await res.text();
         let json = {};
         try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
+        
         if (res.ok) {
-          msg.textContent = 'Salvo';
+          msg.textContent = 'Salvo!';
           msg.style.color = 'green';
-          // se o usuário que alteramos for o logado e caiu para role!=2, não aplicamos mudança na sessão aqui
+          row.style.background = 'white'; // Remove highlight
         } else {
           msg.textContent = json.erro || 'Erro';
           msg.style.color = 'crimson';
         }
       } catch (err) {
         console.error(err);
-        msg.textContent = 'Erro de rede';
+        msg.textContent = 'Erro rede';
         msg.style.color = 'crimson';
       } finally {
         btn.disabled = false;
-        setTimeout(()=>msg.textContent='', 2500);
+        btn.textContent = originalText;
+        setTimeout(() => { msg.textContent = ''; }, 3000);
       }
     });
   });

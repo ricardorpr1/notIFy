@@ -1,5 +1,5 @@
 <?php
-// index.php - Versão Final: Imagens no Mobile Ativadas
+// index.php - Versão Final: Modal de Edição Responsivo (Mobile Fix)
 session_start();
 
 if (!isset($_SESSION['usuario_id'])) {
@@ -275,14 +275,9 @@ try {
       const s = start; 
       const e = end;
       if (!s) return 'blue';
-      if (e && now > e) return 'red'; // Terminado
-      if (s && e && now >= s && now <= e) return 'green'; // Acontecendo
-      if (now < s) { 
-          const diffMs = s.getTime() - now.getTime(); 
-          const diffHours = diffMs / (1000 * 60 * 60); 
-          if (diffHours <= 24) return 'goldenrod'; 
-          return 'blue'; 
-      }
+      if (e && now > e) return 'red';
+      if (s && e && now >= s && now <= e) return 'green';
+      if (now < s) { const diffMs = s.getTime() - now.getTime(); const diffHours = diffMs / (1000 * 60 * 60); if (diffHours <= 24) return 'goldenrod'; return 'blue'; }
       return 'blue';
     }
     function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -560,8 +555,11 @@ try {
         editModal.className = 'modal';
         editModal.style.zIndex = 5000; 
         editModal.style.position = 'fixed'; editModal.style.left = '50%'; editModal.style.top = '50%';
-        editModal.style.transform = 'translate(-50%, -50%)'; editModal.style.width = '450px';
-        
+        editModal.style.transform = 'translate(-50%, -50%)'; 
+        // LARGURA RESPONSIVA AQUI
+        editModal.style.width = '90%'; 
+        editModal.style.maxWidth = '450px';
+
         let turmasHtml = '';
         CursosTurmasData.forEach(curso => {
             turmasHtml += `<div class="turma-curso-grupo"><strong>${escapeHtml(curso.nome)}</strong><br>`;
