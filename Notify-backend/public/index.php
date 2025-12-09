@@ -1,5 +1,5 @@
 <?php
-// index.php - Versão Final: Modal de Edição Responsivo (Mobile Fix)
+// index.php - Versão Final: Correção da Foto no Cartão de Perfil
 session_start();
 
 if (!isset($_SESSION['usuario_id'])) {
@@ -17,6 +17,7 @@ $DB_PASS = "108Xk:C";
 $cursos_map_json = "[]";
 $turmas_json = "[]";
 
+// Carrega cursos e turmas para o formulário de edição
 try {
     $pdo_idx = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -151,7 +152,7 @@ try {
         #calendar { padding: 10px; }
         .fc-toolbar { flex-direction: column; gap: 10px; }
         .fc-toolbar-title { font-size: 20px !important; }
-        .modal { width: 95%; padding: 15px; margin: 10px; max-height: 85vh; }
+        .modal { width: 90%; maxWidth: 450px; padding: 15px; margin: 10px; max-height: 85vh; }
         .modal-footer { justify-content: center; }
         .btn { width: 100%; margin-bottom: 5px; text-align: center; }
         #profileCard { width: 95%; }
@@ -265,7 +266,7 @@ try {
       let arr = []; const tryField = props[key] ?? null; if (!tryField) return arr;
       if (Array.isArray(tryField)) return tryField.map(String);
       if (typeof tryField === 'string') {
-        try { const parsed = JSON.parse(tryField); if (Array.isArray(parsed)) return parsed.map(String); } catch (e) { return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String); }
+        try { const parsed = JSON.parse(tryField); if (Array.isArray(parsed)) return parsed.map(String); } catch(e) { return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String); }
       }
       return [String(tryField)];
     }
@@ -275,9 +276,14 @@ try {
       const s = start; 
       const e = end;
       if (!s) return 'blue';
-      if (e && now > e) return 'red';
-      if (s && e && now >= s && now <= e) return 'green';
-      if (now < s) { const diffMs = s.getTime() - now.getTime(); const diffHours = diffMs / (1000 * 60 * 60); if (diffHours <= 24) return 'goldenrod'; return 'blue'; }
+      if (e && now > e) return 'red'; // Terminado
+      if (s && e && now >= s && now <= e) return 'green'; // Acontecendo
+      if (now < s) { 
+          const diffMs = s.getTime() - now.getTime(); 
+          const diffHours = diffMs / (1000 * 60 * 60); 
+          if (diffHours <= 24) return 'goldenrod'; 
+          return 'blue'; 
+      }
       return 'blue';
     }
     function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -360,11 +366,10 @@ try {
         eventContent: function (arg) {
           let html = '<div class="fc-event-title-custom">' + escapeHtml(arg.event.title) + '</div>';
           const capa = arg.event.extendedProps.capa_url;
-          // --- CORREÇÃO: Removemos a checagem !isMobile ---
+          // Mostra imagem em todos os dispositivos agora
           if (capa) {
             html += '<img class="fc-event-cover-img" src="' + escapeHtml(capa) + '" alt="Capa">';
           }
-          // --- FIM CORREÇÃO ---
           return { html: html };
         },
         eventClick: async function (info) {
@@ -519,6 +524,9 @@ try {
              document.getElementById('cardCPF').textContent = currentUser.cpf || '-';
              document.getElementById('cardPhone').textContent = currentUser.telefone || '-';
              document.getElementById('cardBirth').textContent = currentUser.data_nascimento || '-';
+             // Atualiza a foto do cartão!
+             document.getElementById('cardPhoto').src = currentUser.foto_url || 'default.jpg';
+             
              const alunoInfo = document.getElementById('cardAlunoInfo');
              if (currentUser.turma_id) {
                  document.getElementById('cardRA').textContent = currentUser.registro_academico || '-';
@@ -556,8 +564,8 @@ try {
         editModal.style.zIndex = 5000; 
         editModal.style.position = 'fixed'; editModal.style.left = '50%'; editModal.style.top = '50%';
         editModal.style.transform = 'translate(-50%, -50%)'; 
-        // LARGURA RESPONSIVA AQUI
-        editModal.style.width = '90%'; 
+        // Responsividade do modal de edição
+        editModal.style.width = '90%';
         editModal.style.maxWidth = '450px';
 
         let turmasHtml = '';
