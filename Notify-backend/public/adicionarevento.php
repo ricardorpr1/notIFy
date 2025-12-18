@@ -37,7 +37,7 @@ try {
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Adicionar Evento - notIFy</title>
   <style>
@@ -53,6 +53,7 @@ try {
       justify-content: center;
       padding: 10px 20px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box; /* Importante para mobile */
     }
 
     header img {
@@ -72,31 +73,84 @@ try {
       color: #c00000;
     }
 
-footer {
+    footer {
       position: fixed;
-      bottom: 10px;
+      bottom: 0;
+      left: 0;
       width: 100%;
       text-align: center;
       font-weight: bold;
-      font-size: 20px;
+      font-size: 16px; /* Reduzido um pouco para mobile */
       color: #045c3f;
       user-select: none;
+      background-color: #f4f6f8; /* Fundo para não sobrepor texto */
+      padding: 10px 0;
+      z-index: 100;
     }
 
     footer span {
       color: #c00000;
     }
 
-
-    body { font-family: Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; }
-    h2 { text-align: center; color: #333; }
-    form { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto; }
+    body { font-family: Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; padding-bottom: 60px; /* Espaço para o footer */ }
+    
+    h2 { text-align: center; color: #333; margin-top: 80px; /* Espaço para o header */ }
+    
+    form { 
+        background: #fff; 
+        padding: 20px; 
+        border-radius: 8px; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        max-width: 500px; 
+        margin: 20px auto; 
+        width: 100%; /* Mobile full width */
+        box-sizing: border-box;
+    }
+    
     label { display: block; margin-top: 10px; font-weight: bold; }
-    input[type="text"], input[type="datetime-local"], input[type="number"], textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    button { margin-top: 15px; padding: 10px 20px; border: none; border-radius: 5px; background-color: #228B22; color: #fff; cursor: pointer; }
+    
+    input[type="text"], input[type="datetime-local"], input[type="number"], textarea { 
+        width: 100%; 
+        padding: 12px; /* Padding maior para toque */
+        margin-top: 5px; 
+        border: 1px solid #ccc; 
+        border-radius: 5px; 
+        box-sizing: border-box; 
+    }
+    
+    button { 
+        width: 100%; /* Botão full width */
+        margin-top: 20px; 
+        padding: 12px 20px; 
+        border: none; 
+        border-radius: 8px; 
+        background-color: #228B22; 
+        color: #fff; 
+        cursor: pointer; 
+        font-size: 16px;
+        font-weight: bold;
+    }
     button:hover { background-color: #1c731c; }
-    .voltar { display: block; text-align: center; margin-top: 15px; color: #555; text-decoration: none; }
-    input[type="file"] { background: #f9f9f9; padding: 10px; }
+    
+    /* --- BOTÃO VOLTAR (ESTILIZADO) --- */
+    .voltar { 
+        display: block; 
+        max-width: 500px; /* Mesma largura do form */
+        margin: 15px auto 40px auto; /* Margem inferior extra para não colar no footer */
+        padding: 12px;
+        background-color: #6c757d; /* Cor cinza padrão para 'cancelar/voltar' */
+        color: #fff; 
+        text-align: center; 
+        text-decoration: none; 
+        border-radius: 8px;
+        font-weight: bold;
+        box-sizing: border-box;
+        transition: background 0.2s;
+    }
+    .voltar:hover { background-color: #5a6268; }
+    /* --- FIM --- */
+
+    input[type="file"] { background: #f9f9f9; padding: 10px; width: 100%; box-sizing: border-box; }
     .note { font-size: 12px; color: #666; font-weight: normal; }
     
     /* --- CSS PARA AS TURMAS --- */
@@ -106,8 +160,8 @@ footer {
     }
     .turma-curso-grupo { margin-bottom: 8px; }
     .turma-curso-grupo strong { font-size: 14px; color: #0056b3; }
-    .turma-checkbox { margin-right: 15px; }
-    .turma-checkbox input { width: auto; margin-right: 5px; }
+    .turma-checkbox { margin-right: 15px; display: inline-block; padding: 5px 0; } /* Padding para toque */
+    .turma-checkbox input { width: auto; margin-right: 5px; transform: scale(1.2); }
     /* --- FIM --- */
   </style>
 </head>
@@ -115,10 +169,7 @@ footer {
 <header>
     <h1>Not<span>IF</span>y</h1>
   </header>
-<footer>
-    Not<span>IF</span>y © 2025
-  </footer>
-  <br><br><br><br>
+
   <h2>Adicionar Novo Evento</h2>
   
   <form id="eventoForm">
@@ -167,6 +218,10 @@ footer {
   </form>
 
   <a href="index.php" class="voltar">← Voltar para o calendário</a>
+
+  <footer>
+    Not<span>IF</span>y © 2025
+  </footer>
 
   <script>
     document.getElementById("eventoForm").addEventListener("submit", async (e) => {

@@ -1,5 +1,5 @@
 <?php
-// index.php - Versão Final: Correção da Foto no Cartão de Perfil
+// index.php - Versão Final: Correção de Cache de Imagem
 session_start();
 
 if (!isset($_SESSION['usuario_id'])) {
@@ -8,16 +8,10 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 
 // Configurações do Banco
-$DB_HOST = "127.0.0.1";
-$DB_PORT = "3306";
-$DB_NAME = "notify_db";
-$DB_USER = "tcc_notify";
-$DB_PASS = "108Xk:C";
+$DB_HOST = "127.0.0.1"; $DB_PORT = "3306"; $DB_NAME = "notify_db"; $DB_USER = "tcc_notify"; $DB_PASS = "108Xk:C";
 
-$cursos_map_json = "[]";
-$turmas_json = "[]";
+$cursos_map_json = "[]"; $turmas_json = "[]";
 
-// Carrega cursos e turmas para o formulário de edição
 try {
     $pdo_idx = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -266,7 +260,7 @@ try {
       let arr = []; const tryField = props[key] ?? null; if (!tryField) return arr;
       if (Array.isArray(tryField)) return tryField.map(String);
       if (typeof tryField === 'string') {
-        try { const parsed = JSON.parse(tryField); if (Array.isArray(parsed)) return parsed.map(String); } catch(e) { return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String); }
+        try { const parsed = JSON.parse(tryField); if (Array.isArray(parsed)) return parsed.map(String); } catch (e) { return tryField.split(',').map(s => s.trim()).filter(Boolean).map(String); }
       }
       return [String(tryField)];
     }
@@ -300,8 +294,12 @@ try {
         currentUser = data;
         
         const profileImg = document.getElementById('profileImg');
-        profileImg.src = currentUser.foto_url || 'default.jpg';
+        // --- CORREÇÃO DE CACHE DE IMAGEM ---
+        const imgSrc = currentUser.foto_url || 'default.jpg';
+        // Adiciona timestamp para forçar atualização
+        profileImg.src = imgSrc + '?t=' + new Date().getTime(); 
         profileImg.onerror = () => profileImg.src = 'default.jpg';
+        
         document.getElementById('logoutMini').style.display = 'inline-block';
         
         if (currentUser.role >= 1) document.getElementById('addEventBtn').style.setProperty('display', 'flex', 'important');
@@ -366,10 +364,11 @@ try {
         eventContent: function (arg) {
           let html = '<div class="fc-event-title-custom">' + escapeHtml(arg.event.title) + '</div>';
           const capa = arg.event.extendedProps.capa_url;
-          // Mostra imagem em todos os dispositivos agora
+          // --- CORREÇÃO: Removemos a checagem !isMobile ---
           if (capa) {
             html += '<img class="fc-event-cover-img" src="' + escapeHtml(capa) + '" alt="Capa">';
           }
+          // --- FIM CORREÇÃO ---
           return { html: html };
         },
         eventClick: async function (info) {
@@ -524,8 +523,10 @@ try {
              document.getElementById('cardCPF').textContent = currentUser.cpf || '-';
              document.getElementById('cardPhone').textContent = currentUser.telefone || '-';
              document.getElementById('cardBirth').textContent = currentUser.data_nascimento || '-';
-             // Atualiza a foto do cartão!
-             document.getElementById('cardPhoto').src = currentUser.foto_url || 'default.jpg';
+             
+             // --- CORREÇÃO DE CACHE TAMBÉM NO CARD ---
+             const imgSrc = currentUser.foto_url || 'default.jpg';
+             document.getElementById('cardPhoto').src = imgSrc + '?t=' + new Date().getTime();
              
              const alunoInfo = document.getElementById('cardAlunoInfo');
              if (currentUser.turma_id) {
