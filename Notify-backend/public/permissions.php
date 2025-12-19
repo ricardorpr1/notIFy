@@ -1,48 +1,19 @@
 <?php
-// permissions.php - página de administração de roles (apenas DEV)
+// permissions.php — Com Sidebar e Header Responsivos
 session_start();
+if (!isset($_SESSION['usuario_id'])) { header('Location: telainicio.html'); exit; }
 
-// exige login
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: telainicio.html');
-    exit;
-}
+$userRole = intval($_SESSION['role'] ?? 0);
+$userPhoto = $_SESSION['foto_url'] ?? 'default.jpg';
 
-// só DEV (role == 2)
-$role = intval($_SESSION['role'] ?? 0);
-if ($role !== 2) {
-    http_response_code(403);
-    echo "Acesso negado. Somente contas DEV podem acessar esta página.";
-    exit;
-}
+if ($userRole !== 2) { die("Acesso negado."); }
 
-// DB config
-$host = "127.0.0.1";
-$port = "3306";
-$dbname = "notify_db";
-$dbuser = "tcc_notify";
-$dbpass = "108Xk:C";
-
+$DB_HOST = "127.0.0.1"; $DB_PORT = "3306"; $DB_NAME = "notify_db"; $DB_USER = "tcc_notify"; $DB_PASS = "108Xk:C";
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $dbuser, $dbpass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo "Erro de conexão com o banco.";
-    exit;
-}
-
-// buscar usuários
-try {
+    $pdo = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
     $stmt = $pdo->query("SELECT id, nome, email, cpf, registro_academico, role FROM usuarios ORDER BY nome ASC");
     $users = $stmt->fetchAll();
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo "Erro ao buscar usuários.";
-    exit;
-}
+} catch (PDOException $e) { die("Erro de banco."); }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -52,139 +23,80 @@ try {
 <title>Permissões — notIFy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; background: #f0f2f5; color: #333; }
+  body { margin:0; font-family: 'Inter', sans-serif; background:#f0f2f5; color:#333; overflow-x: hidden; padding-top: 60px; }
   
-  .card { 
-      background: #fff; 
-      padding: 24px; 
-      border-radius: 12px; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-      max-width: 1100px; 
-      margin: 0 auto; 
-  }
+  /* Padrão Header/Sidebar */
+  header { position: fixed; top: 0; left: 0; width: 100%; background-color: #045c3f; color: white; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 3000; }
+  header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -1px; }
+  header span { color: #c00000; font-weight: 900; }
+  #mobileMenuBtn { display: none; position: absolute; left: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
 
-  .topbar { 
-      display: flex; 
-      flex-wrap: wrap; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 20px; 
-      gap: 15px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 15px;
-  }
-  .topbar h2 { margin: 0; font-size: 24px; color: #045c3f; }
+  #sidebar { position: fixed; top: 60px; left: 0; width: 250px; height: calc(100vh - 60px); background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e0e0e0; box-shadow: 4px 0 16px rgba(0,0,0,0.08); z-index: 2000; transition: transform 0.3s ease; }
+  .sidebar-btn { background: #045c3f; color: #fff; border: none; padding: 14px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s; width: 100%; box-sizing: border-box; text-decoration: none; }
+  .sidebar-btn:hover { background: #05774f; transform: translateY(-2px); }
+  .sidebar-btn.active { background: #03442e; border: 1px solid #022c1e; }
+  #sidebarBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1900; }
+
+  #userArea { position: fixed; top: 8px; right: 15px; z-index: 3100; display: flex; gap: 10px; align-items: center; }
+  #profileImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; cursor: pointer; }
+
+  .main-content { padding: 30px; margin-left: 250px; transition: margin 0.3s; max-width: 1100px; }
   
-  .btn-back { 
-      background: #6c757d; color: #fff; 
-      padding: 10px 16px; border: none; 
-      border-radius: 8px; cursor: pointer; 
-      font-weight: 600; text-decoration: none;
-      font-size: 14px;
-  }
-  .status { margin-left: 10px; font-size: 13px; color: #666; font-weight: 500; }
-
-  /* Filtro de Pesquisa */
-  .search-container { margin-bottom: 20px; }
-  #searchInput {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-  }
-
-  /* Tabela Desktop */
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  /* Conteúdo Específico */
+  .card { background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  h2 { margin-top: 0; color: #045c3f; }
+  
+  #searchInput { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; }
+  
+  table { width: 100%; border-collapse: collapse; }
   th, td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
-  th { background: #f8f9fa; font-weight: 700; color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { font-size: 14px; }
+  th { background: #f8f9fa; color: #555; text-transform: uppercase; font-size: 13px; font-weight: 700; }
   
-  /* Controles dentro da tabela */
-  select { 
-      padding: 8px; 
-      border-radius: 6px; 
-      border: 1px solid #ccc; 
-      font-family: inherit;
-      width: 100%;
-      max-width: 160px;
-  }
-  .saveBtn { 
-      background: #045c3f; color: #fff; 
-      border: none; padding: 8px 14px; 
-      border-radius: 6px; cursor: pointer; 
-      font-weight: 600; transition: 0.2s;
-  }
-  .saveBtn:hover { background: #05774f; }
-  .saveBtn:disabled { background: #ccc; cursor: not-allowed; }
-  .msg { font-size: 12px; margin-left: 8px; display: inline-block; min-width: 60px; }
-
-  /* === MODO MOBILE (CARD VIEW) === */
+  select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; }
+  .saveBtn { background: #045c3f; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  .saveBtn:disabled { background: #ccc; }
+  
   @media (max-width: 768px) {
-      body { padding: 10px; }
-      .card { padding: 15px; }
-      .topbar { flex-direction: column; align-items: stretch; text-align: center; }
-      .topbar div { display: flex; flex-direction: column; gap: 10px; }
+      #mobileMenuBtn { display: block; }
+      #sidebar { transform: translateX(-100%); width: 260px; }
+      #sidebar.active { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 20px 15px; }
       
-      /* Esconde o cabeçalho da tabela */
+      /* Card View para Tabela */
       thead { display: none; }
-      
-      /* Transforma linhas em blocos (cards) */
-      tr { 
-          display: block; 
-          margin-bottom: 15px; 
-          border: 1px solid #e0e0e0; 
-          border-radius: 10px; 
-          background: #fff;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-          padding: 15px;
-      }
-      
-      /* Transforma células em linhas flex */
-      td { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-          padding: 8px 0; 
-          border-bottom: 1px dashed #eee;
-          font-size: 14px;
-      }
-      
-      td:last-child { border-bottom: none; flex-direction: column; gap: 10px; margin-top: 10px; }
-      
-      /* Adiciona labels via data-label */
-      td::before {
-          content: attr(data-label);
-          font-weight: 700;
-          color: #555;
-          margin-right: 15px;
-          min-width: 80px;
-      }
-
-      /* Ajustes de controles no mobile */
-      select { max-width: 100%; text-align: right; border: none; background: transparent; font-weight: 600; color: #045c3f; }
-      .saveBtn { width: 100%; padding: 12px; font-size: 16px; margin-top: 5px; }
-      
-      /* Ocultar ID no mobile para economizar espaço */
-      td[data-label="ID"] { display: none; }
+      tr { display: block; margin-bottom: 15px; border: 1px solid #eee; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+      td { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+      td:last-child { border: none; flex-direction: column; align-items: stretch; gap: 10px; margin-top: 10px; }
+      td::before { content: attr(data-label); font-weight: 700; color: #666; }
+      select { text-align: right; border: none; background: transparent; font-weight: 600; color: #045c3f; width: auto; }
   }
 </style>
 </head>
 <body>
+
+<header>
+    <button id="mobileMenuBtn" onclick="toggleSidebar()">☰</button>
+    <h1>Not<span>IF</span>y</h1>
+</header>
+
+<div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+<div id="sidebar">
+    <a href="index.php" class="sidebar-btn">🏠 Calendário</a>
+    <a href="meus_eventos.php" class="sidebar-btn">📅 Meus Eventos</a>
+    <a href="adicionarevento.php" class="sidebar-btn">➕ Adicionar Evento</a>
+    <a href="permissions.php" class="sidebar-btn active">🔐 Permissões</a>
+    <a href="gerenciar_cursos.php" class="sidebar-btn">🏫 Gerenciar Cursos</a>
+</div>
+
+<div id="userArea">
+    <img id="profileImg" src="<?= htmlspecialchars($userPhoto) ?>" alt="Perfil" onclick="location.href='index.php'"/>
+</div>
+
+<div class="main-content">
   <div class="card">
-    <div class="topbar">
-      <h2>Gerenciar Permissões</h2>
-      <div>
-        <span class="status">Logado como: <strong><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'DEV') ?></strong></span>
-        <a href="index.php" class="btn-back">Voltar ao Calendário</a>
-      </div>
-    </div>
-
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Buscar por nome, email ou CPF...">
-    </div>
-
+    <h2>Gerenciar Permissões</h2>
+    <input type="text" id="searchInput" placeholder="Filtrar usuário...">
+    
     <table id="usersTable">
       <thead>
         <tr>
@@ -192,7 +104,7 @@ try {
           <th>Nome</th>
           <th>E-mail</th>
           <th>CPF / RA</th>
-          <th>Permissão Atual</th>
+          <th>Permissão</th>
           <th>Ação</th>
         </tr>
       </thead>
@@ -204,17 +116,17 @@ try {
             <td data-label="E-mail"><?= htmlspecialchars($u['email']) ?></td>
             <td data-label="CPF / RA">
                 <?= htmlspecialchars($u['cpf']) ?>
-                <?= !empty($u['registro_academico']) ? '<br><small style="color:#666">RA: '.htmlspecialchars($u['registro_academico']).'</small>' : '' ?>
+                <?= !empty($u['registro_academico']) ? '<br><small>RA: '.htmlspecialchars($u['registro_academico']).'</small>' : '' ?>
             </td>
             <td data-label="Permissão">
               <select class="roleSelect">
-                <option value="0" <?= intval($u['role'])===0 ? 'selected' : '' ?>>Usuário (0)</option>
-                <option value="1" <?= intval($u['role'])===1 ? 'selected' : '' ?>>Organizador (1)</option>
-                <option value="2" <?= intval($u['role'])===2 ? 'selected' : '' ?>>Dev (2)</option>
+                <option value="0" <?= intval($u['role'])===0?'selected':'' ?>>Usuário</option>
+                <option value="1" <?= intval($u['role'])===1?'selected':'' ?>>Organizador</option>
+                <option value="2" <?= intval($u['role'])===2?'selected':'' ?>>Dev</option>
               </select>
             </td>
             <td data-label="Ação">
-                <button class="saveBtn">Salvar Alteração</button> 
+                <button class="saveBtn">Salvar</button> 
                 <span class="msg"></span>
             </td>
           </tr>
@@ -222,72 +134,51 @@ try {
       </tbody>
     </table>
   </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // Filtro de Pesquisa
-  const searchInput = document.getElementById('searchInput');
-  const tableRows = document.querySelectorAll('#usersTbody tr');
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        const bd = document.getElementById('sidebarBackdrop');
+        sb.classList.toggle('active');
+        bd.style.display = sb.classList.contains('active') ? 'block' : 'none';
+    }
 
-  searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      tableRows.forEach(row => {
-          const text = row.innerText.toLowerCase();
-          row.style.display = text.includes(term) ? '' : 'none';
-      });
-  });
-
-  // Lógica de Salvar
-  tableRows.forEach(row => {
-    const uid = row.getAttribute('data-user-id');
-    const select = row.querySelector('.roleSelect');
-    const btn = row.querySelector('.saveBtn');
-    const msg = row.querySelector('.msg');
-
-    // Detectar mudança para destacar
-    select.addEventListener('change', () => {
-        row.style.background = '#fff8e1'; // Highlight amarelo
-    });
-
-    btn.addEventListener('click', async () => {
-      const newRole = parseInt(select.value, 10);
-      
-      const originalText = btn.textContent;
-      btn.textContent = 'Salvando...';
-      btn.disabled = true;
-      msg.textContent = '';
-      
-      try {
-        const res = await fetch('update_role.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: parseInt(uid,10), role: newRole })
+    // Lógica da Tabela
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('#usersTbody tr');
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        tableRows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
         });
-        
-        const text = await res.text();
-        let json = {};
-        try { json = text ? JSON.parse(text) : {}; } catch(e) { json = { erro: 'Resposta inválida' }; }
-        
-        if (res.ok) {
-          msg.textContent = 'Salvo!';
-          msg.style.color = 'green';
-          row.style.background = 'white'; // Remove highlight
-        } else {
-          msg.textContent = json.erro || 'Erro';
-          msg.style.color = 'crimson';
-        }
-      } catch (err) {
-        console.error(err);
-        msg.textContent = 'Erro rede';
-        msg.style.color = 'crimson';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-        setTimeout(() => { msg.textContent = ''; }, 3000);
-      }
     });
-  });
-});
+
+    tableRows.forEach(row => {
+        const uid = row.getAttribute('data-user-id');
+        const select = row.querySelector('.roleSelect');
+        const btn = row.querySelector('.saveBtn');
+        const msg = row.querySelector('.msg');
+        
+        select.addEventListener('change', () => row.style.background = '#fff8e1');
+
+        btn.addEventListener('click', async () => {
+            const newRole = parseInt(select.value);
+            btn.textContent = '...'; btn.disabled = true;
+            try {
+                const res = await fetch('update_role.php', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: uid, role: newRole })
+                });
+                if(res.ok) { 
+                    msg.textContent = 'Ok'; msg.style.color = 'green'; 
+                    row.style.background = '';
+                } else { msg.textContent = 'Erro'; msg.style.color = 'red'; }
+            } catch(e) { msg.textContent = 'Erro'; }
+            finally { btn.disabled = false; btn.textContent = 'Salvar'; setTimeout(() => msg.textContent='', 2000); }
+        });
+    });
 </script>
 </body>
 </html>

@@ -1,200 +1,128 @@
 <?php
-// adicionarevento.php
+// adicionarevento.php — Com Sidebar e Header Responsivos
 session_start();
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: telainicio.html'); exit;
-}
+if (!isset($_SESSION['usuario_id'])) { header('Location: telainicio.html'); exit; }
 
-// DB config
-$DB_HOST = "127.0.0.1"; $DB_PORT = "3306"; $DB_NAME = "notify_db";
-$DB_USER = "tcc_notify"; $DB_PASS = "108Xk:C";
+$userId = intval($_SESSION['usuario_id']);
+$userRole = intval($_SESSION['role'] ?? 0);
+$userPhoto = $_SESSION['foto_url'] ?? 'default.jpg';
 
-// Buscar Cursos e Turmas
+// Verifica permissão (Role 1 ou 2)
+if ($userRole < 1) { die("Acesso negado. Apenas organizadores."); }
+
+$DB_HOST = "127.0.0.1"; $DB_PORT = "3306"; $DB_NAME = "notify_db"; $DB_USER = "tcc_notify"; $DB_PASS = "108Xk:C";
+
 $cursos_map = [];
 try {
-    $pdo = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
-    
+    $pdo = new PDO("mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
     $cursos = $pdo->query("SELECT id, nome, sigla FROM cursos ORDER BY nome")->fetchAll();
     $turmas = $pdo->query("SELECT id, curso_id, nome_exibicao FROM turmas ORDER BY ano, nome_exibicao")->fetchAll();
-    
-    // Agrupar turmas por curso
-    foreach ($cursos as $curso) {
-        $cursos_map[$curso['id']] = $curso;
-        $cursos_map[$curso['id']]['turmas'] = [];
-    }
-    foreach ($turmas as $turma) {
-        if (isset($cursos_map[$turma['curso_id']])) {
-            $cursos_map[$turma['curso_id']]['turmas'][] = $turma;
-        }
-    }
-} catch (PDOException $e) {
-    die("Erro ao carregar dados de turmas: " . $e->getMessage());
-}
+    foreach ($cursos as $curso) { $cursos_map[$curso['id']] = $curso; $cursos_map[$curso['id']]['turmas'] = []; }
+    foreach ($turmas as $turma) { if (isset($cursos_map[$turma['curso_id']])) { $cursos_map[$turma['curso_id']]['turmas'][] = $turma; } }
+} catch (PDOException $e) { die("Erro banco: " . $e->getMessage()); }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Adicionar Evento - notIFy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-     header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background-color: #045c3f;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      box-sizing: border-box; /* Importante para mobile */
-    }
-
-    header img {
-      width: 50px;
-      height: 50px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-
-    header h1 {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 0;
-    }
-
-    header span {
-      color: #c00000;
-    }
-
-    footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      font-weight: bold;
-      font-size: 16px; /* Reduzido um pouco para mobile */
-      color: #045c3f;
-      user-select: none;
-      background-color: #f4f6f8; /* Fundo para não sobrepor texto */
-      padding: 10px 0;
-      z-index: 100;
-    }
-
-    footer span {
-      color: #c00000;
-    }
-
-    body { font-family: Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; padding-bottom: 60px; /* Espaço para o footer */ }
+    /* Estilos Globais idênticos aos anteriores */
+    body { margin:0; font-family: 'Inter', sans-serif; background:#f0f2f5; color:#333; overflow-x: hidden; padding-top: 60px; }
     
-    h2 { text-align: center; color: #333; margin-top: 80px; /* Espaço para o header */ }
-    
-    form { 
-        background: #fff; 
-        padding: 20px; 
-        border-radius: 8px; 
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        max-width: 500px; 
-        margin: 20px auto; 
-        width: 100%; /* Mobile full width */
-        box-sizing: border-box;
-    }
-    
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    
-    input[type="text"], input[type="datetime-local"], input[type="number"], textarea { 
-        width: 100%; 
-        padding: 12px; /* Padding maior para toque */
-        margin-top: 5px; 
-        border: 1px solid #ccc; 
-        border-radius: 5px; 
-        box-sizing: border-box; 
-    }
-    
-    button { 
-        width: 100%; /* Botão full width */
-        margin-top: 20px; 
-        padding: 12px 20px; 
-        border: none; 
-        border-radius: 8px; 
-        background-color: #228B22; 
-        color: #fff; 
-        cursor: pointer; 
-        font-size: 16px;
-        font-weight: bold;
-    }
-    button:hover { background-color: #1c731c; }
-    
-    /* --- BOTÃO VOLTAR (ESTILIZADO) --- */
-    .voltar { 
-        display: block; 
-        max-width: 500px; /* Mesma largura do form */
-        margin: 15px auto 40px auto; /* Margem inferior extra para não colar no footer */
-        padding: 12px;
-        background-color: #6c757d; /* Cor cinza padrão para 'cancelar/voltar' */
-        color: #fff; 
-        text-align: center; 
-        text-decoration: none; 
-        border-radius: 8px;
-        font-weight: bold;
-        box-sizing: border-box;
-        transition: background 0.2s;
-    }
-    .voltar:hover { background-color: #5a6268; }
-    /* --- FIM --- */
+    header { position: fixed; top: 0; left: 0; width: 100%; background-color: #045c3f; color: white; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 3000; }
+    header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -1px; }
+    header span { color: #c00000; font-weight: 900; }
+    #mobileMenuBtn { display: none; position: absolute; left: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
 
-    input[type="file"] { background: #f9f9f9; padding: 10px; width: 100%; box-sizing: border-box; }
-    .note { font-size: 12px; color: #666; font-weight: normal; }
-    
-    /* --- CSS PARA AS TURMAS --- */
-    .turmas-container {
-        border: 1px solid #ddd; border-radius: 6px; padding: 10px;
-        margin-top: 5px; max-height: 200px; overflow-y: auto;
+    #sidebar { position: fixed; top: 60px; left: 0; width: 250px; height: calc(100vh - 60px); background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e0e0e0; box-shadow: 4px 0 16px rgba(0,0,0,0.08); z-index: 2000; transition: transform 0.3s ease; }
+    .sidebar-btn { background: #045c3f; color: #fff; border: none; padding: 14px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s; width: 100%; box-sizing: border-box; text-decoration: none; }
+    .sidebar-btn:hover { background: #05774f; transform: translateY(-2px); }
+    .sidebar-btn.active { background: #03442e; border: 1px solid #022c1e; }
+    #sidebarBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1900; }
+
+    #userArea { position: fixed; top: 8px; right: 15px; z-index: 3100; display: flex; gap: 10px; align-items: center; }
+    #profileImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; cursor: pointer; }
+
+    .main-content { padding: 30px; margin-left: 250px; transition: margin 0.3s; max-width: 800px; }
+
+    /* Formulário */
+    form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h2 { margin-top: 0; color: #045c3f; }
+    label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+    input[type="text"], input[type="datetime-local"], input[type="number"], textarea, input[type="file"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+    button[type="submit"] { width: 100%; margin-top: 25px; padding: 14px; border: none; border-radius: 8px; background-color: #228B22; color: #fff; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; }
+    button[type="submit"]:hover { background-color: #1c731c; }
+
+    .note { font-size: 12px; color: #777; font-weight: normal; }
+    .turmas-container { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-top: 5px; max-height: 250px; overflow-y: auto; background: #fafafa; }
+    .turma-checkbox { margin-right: 15px; display: inline-flex; align-items: center; padding: 5px 0; }
+    .turma-checkbox input { width: auto; margin: 0 8px 0 0; transform: scale(1.2); }
+
+    @media (max-width: 768px) {
+        #mobileMenuBtn { display: block; }
+        #sidebar { transform: translateX(-100%); width: 260px; }
+        #sidebar.active { transform: translateX(0); }
+        .main-content { margin-left: 0; padding: 20px 15px; }
     }
-    .turma-curso-grupo { margin-bottom: 8px; }
-    .turma-curso-grupo strong { font-size: 14px; color: #0056b3; }
-    .turma-checkbox { margin-right: 15px; display: inline-block; padding: 5px 0; } /* Padding para toque */
-    .turma-checkbox input { width: auto; margin-right: 5px; transform: scale(1.2); }
-    /* --- FIM --- */
   </style>
 </head>
 <body>
-<header>
-    <h1>Not<span>IF</span>y</h1>
-  </header>
 
-  <h2>Adicionar Novo Evento</h2>
-  
+<header>
+    <button id="mobileMenuBtn" onclick="toggleSidebar()">☰</button>
+    <h1>Not<span>IF</span>y</h1>
+</header>
+
+<div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+<div id="sidebar">
+    <a href="index.php" class="sidebar-btn">🏠 Calendário</a>
+    <a href="meus_eventos.php" class="sidebar-btn">📅 Meus Eventos</a>
+    <a href="adicionarevento.php" class="sidebar-btn active">➕ Adicionar Evento</a>
+    <?php if ($userRole == 2): ?>
+        <a href="permissions.php" class="sidebar-btn">🔐 Permissões</a>
+        <a href="gerenciar_cursos.php" class="sidebar-btn">🏫 Gerenciar Cursos</a>
+    <?php endif; ?>
+</div>
+
+<div id="userArea">
+    <img id="profileImg" src="<?= htmlspecialchars($userPhoto) ?>" alt="Perfil" onclick="location.href='index.php'"/>
+</div>
+
+<div class="main-content">
   <form id="eventoForm">
+    <h2>Criar Novo Evento</h2>
     <label>Nome do Evento:</label>
     <input type="text" id="nome" name="nome" required>
     <label>Descrição:</label>
     <textarea id="descricao" name="descricao" rows="3"></textarea>
     <label>Local:</label>
     <input type="text" id="local" name="local">
-    <label>Data e Hora de Início:</label>
-    <input type="datetime-local" id="data_hora_inicio" name="data_hora_inicio" required>
-    <label>Data e Hora de Fim:</label>
-    <input type="datetime-local" id="data_hora_fim" name="data_hora_fim" required>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <label>Início:</label>
+            <input type="datetime-local" id="data_hora_inicio" name="data_hora_inicio" required>
+        </div>
+        <div style="flex: 1; min-width: 200px;">
+            <label>Fim:</label>
+            <input type="datetime-local" id="data_hora_fim" name="data_hora_fim" required>
+        </div>
+    </div>
+    
     <label>Imagem de Capa <span class="note">(Será cortada para 3:1)</span></label>
-    <input type="file" id="capa_upload" name="capa_upload" accept="image/jpeg,image/png,image/webp">
+    <input type="file" id="capa_upload" name="capa_upload" accept="image/*">
     <label>Imagem Completa <span class="note">(Exibida no modal)</span></label>
-    <input type="file" id="imagem_completa_upload" name="imagem_completa_upload" accept="image/jpeg,image/png,image/webp">
-    <label>Limite de Participantes:</label>
+    <input type="file" id="imagem_completa_upload" name="imagem_completa_upload" accept="image/*">
+    <label>Limite de Participantes (0 = ilimitado):</label>
     <input type="number" id="limite_participantes" name="limite_participantes">
 
     <label>Turmas Permitidas</label>
     <div class="turmas-container">
         <?php foreach ($cursos_map as $curso): ?>
             <div class="turma-curso-grupo">
-                <strong><?= htmlspecialchars($curso['nome']) ?></strong><br>
+                <strong style="color:#0056b3;"><?= htmlspecialchars($curso['nome']) ?></strong><br>
                 <?php if (empty($curso['turmas'])): ?>
                     <small>Nenhuma turma cadastrada</small>
                 <?php else: ?>
@@ -207,8 +135,7 @@ try {
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
-        
-        <hr style="border:0; border-top:1px dashed #ccc; margin: 8px 0;">
+        <hr style="border:0; border-top:1px dashed #ccc; margin: 10px 0;">
         <label class="turma-checkbox">
             <input type="checkbox" name="publico_externo" value="1">
             <strong>Público Externo (Não-alunos)</strong>
@@ -216,69 +143,32 @@ try {
     </div>
     <button type="submit" id="submitBtn">Criar Evento</button>
   </form>
+</div>
 
-  <a href="index.php" class="voltar">← Voltar para o calendário</a>
+<script>
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        const bd = document.getElementById('sidebarBackdrop');
+        sb.classList.toggle('active');
+        bd.style.display = sb.classList.contains('active') ? 'block' : 'none';
+    }
 
-  <footer>
-    Not<span>IF</span>y © 2025
-  </footer>
-
-  <script>
     document.getElementById("eventoForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const form = e.target;
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Enviando...';
-
-      const formData = new FormData();
-      
-      // Adiciona campos de texto
-      formData.append('nome', document.getElementById("nome").value);
-      formData.append('descricao', document.getElementById("descricao").value);
-      formData.append('local', document.getElementById("local").value);
-      formData.append('data_hora_inicio', document.getElementById("data_hora_inicio").value);
-      formData.append('data_hora_fim', document.getElementById("data_hora_fim").value);
-      formData.append('limite_participantes', document.getElementById("limite_participantes").value);
-      
-      // Adiciona arquivos
-      const capaFile = document.getElementById("capa_upload").files[0];
-      if (capaFile) formData.append('capa_upload', capaFile);
-      const imagemCompletaFile = document.getElementById("imagem_completa_upload").files[0];
-      if (imagemCompletaFile) formData.append('imagem_completa_upload', imagemCompletaFile);
-
-      // --- LÓGICA DE TURMAS ATUALIZADA ---
-      // Adiciona os IDs das turmas selecionadas
-      const turmasCheckboxes = form.querySelectorAll('input[name="turmas_permitidas[]"]:checked');
-      turmasCheckboxes.forEach(chk => {
-          formData.append('turmas_permitidas[]', chk.value);
-      });
-      
-      // Adiciona o público externo
-      if (form.querySelector('input[name="publico_externo"]:checked')) {
-          formData.append('publico_externo', '1');
-      }
-      // --- FIM DA LÓGICA ---
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      const fd = new FormData(e.target);
       
       try {
-        const response = await fetch("create_event.php", {
-          method: "POST",
-          body: formData 
-        });
-        const result = await response.json();
-        if (response.ok) {
-          alert(result.mensagem || "Evento criado com sucesso!");
+        const res = await fetch("create_event.php", { method: "POST", body: fd });
+        const json = await res.json();
+        if (res.ok) {
+          alert(json.mensagem || "Sucesso!");
           window.location.href = "index.php";
-        } else {
-          alert(result.erro || "Erro ao criar o evento.");
-        }
-      } catch (err) {
-        alert("Erro na requisição: " + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Criar Evento';
-      }
+        } else { alert(json.erro || "Erro."); }
+      } catch (err) { alert("Erro conexão."); } 
+      finally { btn.disabled = false; btn.textContent = 'Criar Evento'; }
     });
-  </script>
+</script>
 </body>
 </html>
