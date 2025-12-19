@@ -1,13 +1,12 @@
 <?php
-// gerenciar_inscricoes.php - Otimizado para Mobile
+// gerenciar_inscricoes.php
 session_start();
 
-// 1. Requer Login
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: telainicio.html');
-    exit;
-}
-// 2. ID do Evento
+if (!isset($_SESSION['usuario_id'])) { header('Location: telainicio.html'); exit; }
+
+$userRole = intval($_SESSION['role'] ?? 0);
+$userPhoto = $_SESSION['foto_url'] ?? 'default.jpg';
+
 $eventId = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if ($eventId <= 0) die("ID do evento inválido.");
 ?>
@@ -19,128 +18,89 @@ if ($eventId <= 0) die("ID do evento inválido.");
 <title>Gerenciar Inscrições — notIFy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-    body { font-family: 'Inter', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+    body { margin:0; font-family: 'Inter', sans-serif; background:#f0f2f5; color:#333; overflow-x: hidden; padding-top: 60px; }
     
-    .card { 
-        background: #fff; 
-        padding: 24px; 
-        border-radius: 12px; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-        max-width: 1200px; 
-        margin: 0 auto; 
-    }
+    /* LAYOUT BASE (Header/Sidebar) */
+    header { position: fixed; top: 0; left: 0; width: 100%; background-color: #045c3f; color: white; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 3000; }
+    header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -1px; }
+    header span { color: #c00000; font-weight: 900; }
+    #mobileMenuBtn { display: none; position: absolute; left: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
 
-    .topbar { 
-        display: flex; 
-        flex-wrap: wrap; 
-        justify-content: space-between; 
-        align-items: center; 
-        margin-bottom: 20px; 
-        gap: 15px; 
-        border-bottom: 1px solid #eee;
-        padding-bottom: 15px;
-    }
+    #sidebar { position: fixed; top: 60px; left: 0; width: 250px; height: calc(100vh - 60px); background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e0e0e0; box-shadow: 4px 0 16px rgba(0,0,0,0.08); z-index: 2000; transition: transform 0.3s ease; }
+    .sidebar-btn { background: #045c3f; color: #fff; border: none; padding: 14px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s; width: 100%; box-sizing: border-box; text-decoration: none; }
+    .sidebar-btn:hover { background: #05774f; transform: translateY(-2px); }
+    #sidebarBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1900; }
+
+    #userArea { position: fixed; top: 8px; right: 15px; z-index: 3100; display: flex; gap: 10px; align-items: center; }
+    #profileImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; cursor: pointer; }
+
+    .main-content { padding: 30px; margin-left: 250px; transition: margin 0.3s; max-width: 1200px; }
+
+    /* Estilos Específicos da Página */
+    .card { background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
     .topbar h2 { margin: 0; font-size: 24px; color: #045c3f; }
 
-    .btn { 
-        padding: 10px 16px; 
-        border: none; 
-        border-radius: 8px; 
-        cursor: pointer; 
-        color: #fff; 
-        text-decoration: none; 
-        font-size: 14px; 
-        font-weight: 600; 
-        display: inline-flex; 
-        align-items: center; 
-        justify-content: center;
-        transition: opacity 0.2s;
-        white-space: nowrap;
-    }
+    .btn { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; color: #fff; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: opacity 0.2s; white-space: nowrap; }
     .btn:hover { opacity: 0.9; }
     .btn-back { background: #6c757d; }
     .btn-export { background: #007bff; }
     .btn-save { background: #28a745; }
     .btn-action { background: #17a2b8; }
-    .btn-danger { background: #dc3545; }
     .btn-manual { background: #ffc107; color: #212529; }
     
-    .controls { 
-        display: flex; 
-        flex-wrap: wrap; 
-        gap: 20px; 
-        align-items: flex-end; 
-        margin-bottom: 20px; 
-        padding: 20px; 
-        background: #f8f9fa; 
-        border-radius: 10px; 
-        border: 1px solid #e9ecef;
-    }
+    .controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px solid #e9ecef; }
     .controls-highlight { background: #fff8e1; border-color: #ffeeba; }
-    
     .control-group { display: flex; flex-direction: column; gap: 5px; }
     .controls label { font-weight: 600; font-size: 13px; color: #555; }
+    .controls input, .controls select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; min-width: 200px; }
     
-    .controls input[type="search"], 
-    .controls input[type="number"], 
-    .controls select { 
-        padding: 10px; 
-        border: 1px solid #ccc; 
-        border-radius: 6px; 
-        font-size: 14px;
-        min-width: 200px;
-    }
-    
-    /* Container responsivo para a tabela */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* Suavidade no iOS */
-        border-radius: 8px;
-        border: 1px solid #eee;
-    }
-
-    table { width: 100%; border-collapse: collapse; min-width: 800px; /* Garante largura mínima */ }
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #eee; }
+    table { width: 100%; border-collapse: collapse; min-width: 800px; }
     th, td { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
-    th { background: #f8f9fa; font-size: 13px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-    td { font-size: 14px; color: #333; }
-    
-    /* Checkbox maior para facilitar toque */
-    input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
-
+    th { background: #f8f9fa; font-size: 13px; font-weight: 700; color: #555; text-transform: uppercase; }
     .status-presente { color: #155724; background: #d4edda; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .status-inscrito { color: #856404; background: #fff3cd; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-    
     #msgBox { margin-bottom: 20px; padding: 15px; border-radius: 8px; display: none; font-weight: 500; }
-    #msgBox.success { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-    #msgBox.error { background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+    #msgBox.success { background: #d1e7dd; color: #0f5132; } #msgBox.error { background: #f8d7da; color: #842029; }
 
-    /* --- ESTILOS MOBILE --- */
     @media (max-width: 768px) {
-        body { padding: 10px; }
-        .card { padding: 15px; }
-        
-        .topbar { flex-direction: column; align-items: stretch; text-align: center; }
-        .topbar h2 { font-size: 20px; margin-bottom: 10px; }
-        
-        .controls { flex-direction: column; align-items: stretch; gap: 15px; padding: 15px; }
+        #mobileMenuBtn { display: block; }
+        #sidebar { transform: translateX(-100%); width: 260px; }
+        #sidebar.active { transform: translateX(0); }
+        .main-content { margin-left: 0; padding: 20px 15px; }
+        .controls { flex-direction: column; align-items: stretch; }
         .control-group { width: 100%; }
-        
-        .controls input[type="search"], 
-        .controls input[type="number"], 
-        .controls select { width: 100%; min-width: 0; box-sizing: border-box; }
-        
-        /* Botões full width no mobile */
-        .btn { width: 100%; margin-bottom: 5px; }
-        /* Remove margin-bottom do último botão de um grupo */
-        .controls .btn { margin-top: 5px; }
-        
-        /* Ajuste fino na tabela para não ficar colada */
-        th, td { padding: 10px; }
+        .controls input, .controls select, .btn { width: 100%; margin-bottom: 5px; box-sizing: border-box; }
+        .topbar { flex-direction: column; text-align: center; }
     }
 </style>
 </head>
 <body>
+
+<header>
+    <button id="mobileMenuBtn" onclick="toggleSidebar()">☰</button>
+    <h1>Not<span>IF</span>y</h1>
+</header>
+
+<div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+<div id="sidebar">
+    <a href="index.php" class="sidebar-btn">🏠 Calendário</a>
+    <a href="meus_eventos.php" class="sidebar-btn">📅 Meus Eventos</a>
+    <?php if ($userRole >= 1): ?>
+        <a href="adicionarevento.php" class="sidebar-btn">➕ Adicionar Evento</a>
+    <?php endif; ?>
+    <?php if ($userRole == 2): ?>
+        <a href="permissions.php" class="sidebar-btn">🔐 Permissões</a>
+        <a href="gerenciar_cursos.php" class="sidebar-btn">🏫 Gerenciar Cursos</a>
+    <?php endif; ?>
+</div>
+
+<div id="userArea">
+    <img id="profileImg" src="<?= htmlspecialchars($userPhoto) ?>" alt="Perfil" onclick="location.href='index.php'"/>
+</div>
+
+<div class="main-content">
     <div class="card">
         <div class="topbar">
             <h2 id="eventName">Gerenciar Inscrições</h2>
@@ -156,7 +116,7 @@ if ($eventId <= 0) die("ID do evento inválido.");
             </div>
             
             <div class="control-group" style="flex: 1;">
-                <label for="limiteInput">Limite de Participantes (0 = ilimitado)</label>
+                <label for="limiteInput">Limite (0 = ilimitado)</label>
                 <div style="display: flex; gap: 5px;">
                     <input type="number" id="limiteInput" min="0" value="0" style="flex: 1;">
                     <button id="saveLimitBtn" class="btn btn-save" style="width: auto;">Salvar</button>
@@ -164,14 +124,15 @@ if ($eventId <= 0) die("ID do evento inválido.");
             </div>
             
             <div class="control-group">
-                <label style="visibility: hidden; height: 0; margin: 0;">Ações</label> <a href="export_inscricoes.php?id=<?= $eventId ?>" id="exportLink" class="btn btn-export">Exportar CSV</a>
+                <label style="visibility: hidden; height: 0; margin: 0;">Ações</label>
+                <a href="export_inscricoes.php?id=<?= $eventId ?>" id="exportLink" class="btn btn-export">Exportar CSV</a>
                 <a href="validar_manualmente.php?event_id=<?= $eventId ?>" class="btn btn-manual" style="margin-top: 5px;">Validar Manualmente</a>
             </div>
         </div>
 
         <div class="controls controls-highlight">
             <div class="control-group" style="width: 100%;">
-                <label for="bulkAction">Ações em massa para selecionados:</label>
+                <label for="bulkAction">Ações em massa:</label>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <select id="bulkAction" style="flex: 1;">
                         <option value="">Selecione uma ação...</option>
@@ -202,8 +163,16 @@ if ($eventId <= 0) die("ID do evento inválido.");
             </table>
         </div>
     </div>
+</div>
 
 <script>
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    sb.classList.toggle('active');
+    bd.style.display = sb.classList.contains('active') ? 'block' : 'none';
+}
+
 const EVENT_ID = <?= $eventId; ?>;
 const API_URL = 'api_gerenciar_inscricoes.php';
 const eventNameEl = document.getElementById('eventName');
@@ -229,10 +198,7 @@ async function apiCall(action, formData) {
         if (!res.ok) throw new Error(json.erro || 'Erro desconhecido');
         showMessage(json.mensagem || 'Sucesso!', 'success');
         return json;
-    } catch (err) {
-        showMessage(err.message, 'error');
-        throw err;
-    }
+    } catch (err) { showMessage(err.message, 'error'); throw err; }
 }
 
 async function carregarDados() {
@@ -240,15 +206,10 @@ async function carregarDados() {
         const res = await fetch(`${API_URL}?action=get_data&event_id=${EVENT_ID}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.erro);
-        
         eventNameEl.textContent = `Gerenciar: ${data.evento.nome}`;
         limiteInput.value = data.evento.limite_participantes || 0;
-        
-        allUsersData = data.usuarios;
-        presencasIds = data.presencas_ids; 
-        
+        allUsersData = data.usuarios; presencasIds = data.presencas_ids; 
         renderTabela();
-        
     } catch (err) {
         showMessage(err.message, 'error');
         usersTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">${err.message}</td></tr>`;
@@ -258,86 +219,49 @@ async function carregarDados() {
 function renderTabela() {
     usersTbody.innerHTML = '';
     const query = searchBox.value.trim().toLowerCase();
-    
-    const usuariosFiltrados = allUsersData.filter(user => {
-        return user.nome.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
-    });
+    const usuariosFiltrados = allUsersData.filter(user => user.nome.toLowerCase().includes(query) || user.email.toLowerCase().includes(query));
 
-    if (usuariosFiltrados.length === 0) {
-        usersTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #666;">Nenhum inscrito encontrado.</td></tr>';
-        return;
-    }
+    if (usuariosFiltrados.length === 0) { usersTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">Nenhum inscrito.</td></tr>'; return; }
 
     usuariosFiltrados.forEach(user => {
         const isPresente = presencasIds.includes(Number(user.id));
         const statusClass = isPresente ? 'status-presente' : 'status-inscrito';
         const statusText = isPresente ? 'Presente' : 'Inscrito';
-
         const row = document.createElement('tr');
-        row.dataset.userId = user.id;
         row.innerHTML = `
             <td style="text-align: center;"><input type="checkbox" class="user-checkbox" value="${user.id}"></td>
             <td><strong>${escapeHtml(user.nome)}</strong></td>
             <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.cpf || '-')}</td>
             <td>${escapeHtml(user.turma_nome || 'Externo')}</td>
-            <td><span class="${statusClass}">${statusText}</span></td>
-        `;
+            <td><span class="${statusClass}">${statusText}</span></td>`;
         usersTbody.appendChild(row);
     });
 }
 
 function showMessage(msg, type = 'success') {
     msgBox.textContent = msg;
-    msgBox.className = type === 'success' ? 'success' : 'error';
+    msgBox.className = type;
     msgBox.style.display = 'block';
-    // Scroll para mensagem no mobile
-    if (window.innerWidth < 768) {
-        msgBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if(window.innerWidth < 768) msgBox.scrollIntoView({behavior:'smooth'});
     setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
 }
 function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function getSelectedUserIds() {
-    return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
-}
+function getSelectedUserIds() { return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value); }
 
 document.addEventListener('DOMContentLoaded', carregarDados);
-
-saveLimitBtn.addEventListener('click', async () => {
-    const formData = new FormData();
-    formData.append('limite', limiteInput.value);
-    await apiCall('update_limit', formData);
-});
-
+saveLimitBtn.addEventListener('click', async () => { const fd = new FormData(); fd.append('limite', limiteInput.value); await apiCall('update_limit', fd); });
 searchBox.addEventListener('input', renderTabela);
-
-selectAll.addEventListener('change', (e) => {
-    document.querySelectorAll('.user-checkbox').forEach(cb => {
-        cb.checked = e.target.checked;
-    });
-});
-
+selectAll.addEventListener('change', (e) => { document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = e.target.checked); });
 applyBulkBtn.addEventListener('click', async () => {
     const action = bulkAction.value;
     const userIds = getSelectedUserIds();
-
     if (!action) { alert('Selecione uma ação.'); return; }
     if (userIds.length === 0) { alert('Selecione pelo menos um usuário.'); return; }
-
-    if (action === 'remover_inscricao') {
-        if (!confirm(`Tem certeza que quer REMOVER ${userIds.length} usuário(s) deste evento? Esta ação não pode ser desfeita.`)) {
-            return;
-        }
-    }
-    
-    const formData = new FormData();
-    userIds.forEach(id => formData.append('user_ids[]', id));
-    
-    try {
-        await apiCall(action, formData);
-        await carregarDados(); 
-    } catch (err) { /* Erro já foi mostrado */ }
+    if (action === 'remover_inscricao' && !confirm('Remover inscrição destes usuários?')) return;
+    const fd = new FormData();
+    userIds.forEach(id => fd.append('user_ids[]', id));
+    try { await apiCall(action, fd); await carregarDados(); } catch (err) {}
 });
 </script>
 </body>
